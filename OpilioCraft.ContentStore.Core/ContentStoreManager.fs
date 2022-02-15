@@ -3,23 +3,6 @@
 open System
 open OpilioCraft.FSharp.Prelude
 
-module ContentStore =
-    let initialize () =
-        // check configuration
-        Console.WriteLine "Checking settings"
-        Settings.verifyUserSettings ()
-            // will throw IncompleteSetupException if missing
-            // will throw InvalidUserSettingsException if config file is of wrong format
-            // will throw IncompatibleVersionException if version in config file is not framework version
-
-        // check ruleset
-        try
-            Console.WriteLine "Loading heuristik"
-            Heuristik.OwnerRuleSet |> ignore
-        with
-        | exn -> raise (RuleSetError(Name = Settings.OwnerRuleSetFilename, Exception = exn))
-
-
 /// <summary>Global entry point for using the Content Store Framework.</summary>
 /// <para>
 /// Creating an instance of ContentStoreManager before using the members of the library
@@ -27,7 +10,7 @@ module ContentStore =
 /// <para>
 /// The UseXXX() methods offer a way to control long-term resources. </para>
 [<Sealed>]
-type ContentStoreManager () =
+type ContentStoreManager private () =
     inherit DisposableBase ()
 
     [<Literal>]
@@ -35,10 +18,6 @@ type ContentStoreManager () =
 
     let mutable _isDisposed = false
     let mutable _usedResources : Map<string, DisposeDelegate> = Map.empty
-
-    static do
-        // initialization does several checks, will throw exceptions on non-compliances
-        ContentStore.initialize ()
 
     // notify resource use
     member _.UseExifTool () =
@@ -57,4 +36,24 @@ type ContentStoreManager () =
 
         base.DisposeManagedResources ()
 
+    // assure valid framework configuration before instantiating ContentStoreManager
+    static member CreateInstance () =
+        try
+            // check framework
+            UserSettings.verifyFrameworkConfig ()
+                // will throw IncompleteSetupException if missing
+                // will throw InvalidUserSettingsException if config file is of wrong format
+                // will throw IncompatibleVersionException if version in config file is not framework version
+
+            // check ruleset
+            try
+                Heuristik.OwnerRuleSet |> ignore
+            with
+            | exn -> raise (RuleSetError(Name = Settings.OwnerRuleSetFilename, Exception = exn))
+
+            // create instance
+            new ContentStoreManager ()
+        with
+        | exn -> Console.WriteLine $"unexpected exception: {exn.Message}"; raise exn
+        
 and DisposeDelegate = unit -> unit

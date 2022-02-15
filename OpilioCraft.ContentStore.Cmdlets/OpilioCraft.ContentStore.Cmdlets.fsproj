@@ -1,8 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>Carsten Schäfer</Authors>
+    <Copyright>Copyright (c) 2022 by Carsten Schäfer</Copyright>
+    <PackageTags>OpilioCraft;PowerShell</PackageTags>
+    <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
+    <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,7 +43,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OpilioCraft.ContentStore.Core\OpilioCraft.ContentStore.Core.fsproj" />
+    <ProjectReference Include="..\OpilioCraft.ContentStore.Core\OpilioCraft.ContentStore.Core.fsproj">
+      <CopyLocal>False</CopyLocal>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

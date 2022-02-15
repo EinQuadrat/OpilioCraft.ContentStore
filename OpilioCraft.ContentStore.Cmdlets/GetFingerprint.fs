@@ -1,7 +1,7 @@
 ﻿namespace OpilioCraft.ContentStore.Cmdlets
 
 open System.Management.Automation
-open OpilioCraft.ContentStore.Core
+open OpilioCraft.FSharp.Prelude
 
 [<Cmdlet(VerbsCommon.Get, "Fingerprint")>]
 [<OutputType(typeof<TypedFingerprint>, typeof<PlainFingerprint>)>]

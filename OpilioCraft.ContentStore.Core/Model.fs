@@ -1,14 +1,24 @@
 ﻿namespace OpilioCraft.ContentStore.Core
 
 open System.Text.Json.Serialization
+open OpilioCraft.FSharp.Prelude
 
 // exceptions
+exception UnknownRepositoryException of Name : string
+    with override x.Message = $"[ContentStore] no repository with name \"{x.Name}\" found; please check framework configuration"
 exception RuleSetError of Name : string * Exception : System.Exception
+
+// framework config
+type FrameworkConfig =
+    {
+        Version : System.Version
+        Repositories : Map<string,string>
+    }
 
 // repository config
 type RepositoryConfig =
     {
-        Version : int
+        Version : System.Version
         Layout : RepositoryLayout
         Prefetch : bool
     }
@@ -21,25 +31,11 @@ and RepositoryLayout =
 
 // ----------------------------------------------------------------------------
 
-type Fingerprint = string
-
-type QualifiedFingerprint =
-    | Full of Fingerprint
-    | Partly of Fingerprint
-    | Derived of Fingerprint
-    | Unknown
-
-    member x.Value =
-        match x with
-        | Full x | Partly x | Derived x -> x
-        | Unknown -> invalidOp $"[{nameof QualifiedFingerprint}] cannot extract value of unknown fingerprint"
-
-// ----------------------------------------------------------------------------
-
 type ContentCategory =
     | Unknown = 0
     | Image = 1
     | Movie = 2
+    | Digitalized = 3 // digitalized former analogue stuff
 
 type ContentType =
     {
@@ -53,7 +49,6 @@ type FileIdentificator =
     {
         FileInfo : System.IO.FileInfo
         AsOf : System.DateTime
-        ContentType : ContentType
         Fingerprint : Fingerprint
     }
 

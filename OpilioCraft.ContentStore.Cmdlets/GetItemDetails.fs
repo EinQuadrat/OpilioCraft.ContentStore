@@ -3,6 +3,7 @@
 open System
 open System.Management.Automation
 open System.Text.RegularExpressions
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
 [<Cmdlet(VerbsCommon.Get, "ItemDetails", DefaultParameterSetName = "ByPath")>]

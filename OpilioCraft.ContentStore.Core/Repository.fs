@@ -10,13 +10,11 @@ open OpilioCraft.FSharp.Prelude
 open Utils // load FileIdentifier extensions
 
 exception RepositoryNotFoundError of root : string
-exception RepositoryConfigNotFoundError of filename : string
-exception RepositoryConfigSyntaxError of errorMessage : string
-exception RepositoryVersionError of expected : int * found : int
 
 // Repository main class
 type Repository private (root : string, config : RepositoryConfig, forcePrefetch) as this =
-    [<Literal>] static let ModelVersion = 2
+    static let ModelVersion = Version(2, 0)
+
     [<Literal>] static let DefaultRepository = "DEFAULT"
     [<Literal>] static let ConfigFilename = "repository.json"
 
@@ -41,12 +39,6 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
     let itemFile (id : ItemId) = itemsSection >+> $"{id}.json"
     let contentFile (id : ItemId) ext = storageSection >+> $"{id}{ext}"
 
-    // check prerequisites
-    do
-        if not <| config.Version.Equals ModelVersion
-        then
-            raise <| RepositoryVersionError(expected = ModelVersion, found = config.Version)
-
     // caching
     do
         if (config.Prefetch || forcePrefetch)
@@ -55,7 +47,7 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
 
     // repository access
     static member LoadRepository(repositoryName : string, ?forcePrefetch : bool) =
-        let pathToRepository = Settings.RepositoryPath repositoryName
+        let pathToRepository = UserSettings.RepositoryPath repositoryName
             // will throw UnknownRepository on a given name not mentioned in configuration file
 
         if not <| Directory.Exists pathToRepository
@@ -63,17 +55,9 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
             raise <| RepositoryNotFoundError pathToRepository
 
         let pathToConfigFile = pathToRepository >+> ConfigFilename
-
-        if not <| File.Exists pathToConfigFile
-        then
-            raise <| RepositoryConfigNotFoundError pathToConfigFile
-
         let config =
-            try
-                let configAsJson = File.ReadAllText(pathToConfigFile)
-                JsonSerializer.Deserialize<RepositoryConfig>(configAsJson)
-            with
-            | exn -> raise <| RepositoryConfigSyntaxError exn.Message
+            UserSettingsHelper.load pathToConfigFile (JsonSerializerOptions())
+            |> Verify.isVersion ModelVersion
 
         Repository(pathToRepository, config, forcePrefetch |> Option.defaultValue false)
 
@@ -195,13 +179,11 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
         let item = id |> x.FetchItem in
         (id, item.ContentType.FileExtension) ||> contentFile |> File.Exists
 
-    member private x.StoreFile (fident : FileIdentificator) =
-        let id : ItemId = fident.Fingerprint
-        let item = id |> x.FetchItem
-        let dataFile = (id, item.ContentType.FileExtension) ||> contentFile
+    member private x.StoreFile id (fileInfo : FileInfo) =
+        let dataFile = (id, fileInfo.Extension) ||> contentFile
 
         try
-            File.Copy(fident.FileInfo.FullName, dataFile, false) // prevent accidential overwrite of existing files
+            File.Copy(fileInfo.FullName, dataFile, false) // prevent accidential overwrite of existing files
         with
         | exn -> failwith $"[{nameof Repository}] cannot store file for id {id}: {exn.Message}"
 
@@ -214,17 +196,6 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
         with
         | exn -> failwith $"[{nameof Repository}] cannot clone file for id {id}: {exn.Message}"
 
-    member private x.FileIdentificator id = // IMPORTANT: Never ever expose this method or the returned file identificator to clients!
-        let item = id |> x.FetchItem
-        let reposFile = (id, item.ContentType.FileExtension) ||> contentFile
-
-        {
-            FileInfo    = new System.IO.FileInfo(reposFile)
-            AsOf        = item.AsOf
-            ContentType = item.ContentType
-            Fingerprint = item.Id
-        }
-
     // forget data
     member x.Forget (id : ItemId) : unit =
         if id |> x.IsManagedId
@@ -236,39 +207,35 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
             with
             | exn -> failwith $"[{nameof Repository}] cannot cleanup resources related to id {id}: {exn.Message}"
 
-    // repository item factory
-    member private x.CreateItemFromIdentificator (fident : FileIdentificator) : RepositoryItem =
-        {
-            Id = fident.Fingerprint
-            AsOf = fident.AsOf
-            ContentType = fident.ContentType
-            Relations = List.empty<Relation>
-            Details = fident |> Utils.getExtendedData
-        }
-
     // high-level api
-    member x.AddToRepository (fident : FileIdentificator) : ItemId =
+    member x.AddToRepository(fident : FileIdentificator, ?contentCategoryOverwrite) : ItemId =
         let itemId = fident.Fingerprint
 
         if not (itemId |> x.IsManagedId)
         then
-            fident
-            |> x.CreateItemFromIdentificator
+            let contentType =
+                contentCategoryOverwrite
+                |> Option.map (fun category -> { Category = category; FileExtension = fident.FileInfo.Extension })
+                |> Option.defaultValue (fident.FileInfo |> getContentType)
+
+            {
+                Id = itemId
+                AsOf = fident.AsOf
+                ContentType = contentType
+                Relations = List.empty<Relation>
+                Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category
+            }
             |> x.StoreItem
+            
+            fident.FileInfo |> x.StoreFile itemId
 
-            fident
-            |> x.StoreFile
-
-        itemId
-
-    member x.AddToRepository (fi : FileInfo) = fi |> identifyFile |> x.AddToRepository
-    member x.AddToRepository (file : string) = file |> FileInfo |> x.AddToRepository
+        itemId // facilitate chaining
 
     // details maintenance
     member x.ReadDetailsFromFile id =
-        id
-        |> x.FileIdentificator
-        |> Utils.getExtendedData
+        let item = id |> x.FetchItem
+        let contentFileInfo = (id, item.ContentType.FileExtension) ||> contentFile |> FileInfo
+        Utils.getCategorySpecificDetails contentFileInfo item.ContentType.Category
 
     member x.ResetDetails id =
         id

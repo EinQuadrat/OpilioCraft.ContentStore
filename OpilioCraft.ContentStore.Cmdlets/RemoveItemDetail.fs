@@ -2,6 +2,7 @@
 
 open System
 open System.Management.Automation
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
 [<Cmdlet(VerbsCommon.Remove, "ItemDetail", DefaultParameterSetName="ByPath")>]
@@ -30,6 +31,8 @@ type public RemoveItemDetailCommand () =
 
     // cmdlet funtionality
     override x.BeginProcessing() =
+        base.BeginProcessing () // initialize MMToolkit
+
         if not <| isWriteable x.Name
         then
             x.ThrowValidationError $"detail slot is read-only: {x.Name}" ErrorCategory.InvalidArgument

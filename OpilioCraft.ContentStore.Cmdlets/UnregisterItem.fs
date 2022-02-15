@@ -2,7 +2,7 @@
 
 open System
 open System.Management.Automation
-open OpilioCraft.ContentStore.Core
+open OpilioCraft.FSharp.Prelude
 
 [<Cmdlet(VerbsLifecycle.Unregister, "Item", DefaultParameterSetName="ByPath")>]
 [<OutputType(typeof<Void>)>]

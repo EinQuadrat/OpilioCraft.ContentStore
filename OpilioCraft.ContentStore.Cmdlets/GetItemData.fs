@@ -2,6 +2,7 @@
 
 open System
 open System.Management.Automation
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
 [<Cmdlet(VerbsCommon.Get, "ItemData", DefaultParameterSetName="ByPath")>]

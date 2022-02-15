@@ -2,22 +2,33 @@
 
 open System.IO
 open FSharp.Data
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
 // public api
-let getContentType (fi : FileInfo) : ContentType =
+let getContentCategory (fi : FileInfo) : ContentCategory =
     match fi.Extension.ToLower() with
-    | Match("^(\.(arw|jpe?g|tiff?|gif))$") m -> { Category = ContentCategory.Image; FileExtension = m.Groups.[1].Value }
-    | Match("^(\.(mov|mp4|mts))$") m -> { Category = ContentCategory.Movie; FileExtension = m.Groups.[1].Value }
-    | ext -> { Category = ContentCategory.Unknown; FileExtension = ext }
+    | Match("^(\.(arw|jpe?g|tiff?|gif))$") _ -> ContentCategory.Image
+    | Match("^(\.(mov|mp4|mts))$") _ -> ContentCategory.Movie
+    | ext -> ContentCategory.Unknown
+
+let getContentType (fi : FileInfo) : ContentType =
+    {
+        Category = fi |> getContentCategory
+        FileExtension = fi.Extension.ToLower()
+    }
 
 let identifyFile (fi : FileInfo) =
     {
         FileInfo = fi
         AsOf = fi.LastWriteTimeUtc
-        ContentType = fi |> getContentType
         Fingerprint = fi.FullName |> Fingerprint.fingerprintAsString
     }
+
+let tryParseContentCategory (input : string) : ContentCategory option =
+    match System.Enum.TryParse<ContentCategory>(input, true) with
+    | true, value -> Some value
+    | _ -> None
 
 let tryParseRelationType (input : string) : RelationType option =
     match System.Enum.TryParse<RelationType>(input, true) with
@@ -54,10 +65,10 @@ let private transformExifToItemDetails (exif : ExifToolResult) =
     exif.ParsedJson.Properties()
     |> Array.fold ( fun map (name, value) -> (transformJsonValue name value, map) ||> Map.add name ) Map.empty
     
-let private getCategorySpecificData (fi : FileInfo) (category : ContentCategory) : ItemDetails =
+let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategory) : ItemDetails =
     let result = new ItemDetails()
 
-    match category with
+    match contentCategory with
     | ContentCategory.Image ->
         match fi |> ExifToolHelper.getMetadata with
         | Some exif ->
@@ -89,6 +100,3 @@ let private getCategorySpecificData (fi : FileInfo) (category : ContentCategory)
     | _ -> ignore ()
 
     result
-
-let getExtendedData (fident : FileIdentificator) = getCategorySpecificData fident.FileInfo fident.ContentType.Category
-let getExtendedDataByFileInfo (fi : FileInfo) = getCategorySpecificData fi (getContentType fi).Category

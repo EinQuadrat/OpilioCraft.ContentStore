@@ -3,6 +3,7 @@
 open System
 open System.Management.Automation
 open OpilioCraft.ContentStore.Core
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.TryWrapper
 
 [<Cmdlet(VerbsCommon.Set, "DateTaken", DefaultParameterSetName="ByPathShift")>]

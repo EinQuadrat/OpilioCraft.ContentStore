@@ -35,8 +35,10 @@ type public GetExtendedDataCommand () =
             x.Path
             |> x.ToAbsolutePath
             |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map ( fun path -> path, path |> System.IO.FileInfo |> Utils.getExtendedDataByFileInfo )
-            |> Option.map ( fun (path, extendedData) ->
+            |> Option.map (fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory)
+            |> Option.map ( fun (path, category) ->
+                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category
+
                 if x.AsHashtable.IsPresent
                 then
                     extendedData

@@ -3,6 +3,7 @@
 open System
 open System.Management.Automation
 open OpilioCraft.ContentStore.Core
+open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
 [<Cmdlet(VerbsCommon.Set, "ItemDetail", DefaultParameterSetName="ByPath")>]
@@ -37,6 +38,8 @@ type public SetItemDetailCommand () =
 
     // cmdlet funtionality
     override x.BeginProcessing() =
+        base.BeginProcessing () // initialize MMToolkit
+
         if not <| isWriteable x.Name
         then
             x.ThrowValidationError $"detail member is read-only: {x.Name}" ErrorCategory.InvalidArgument
@@ -72,7 +75,7 @@ type public SetItemDetailCommand () =
 
                     | v -> ItemDetail.String v // default case
                 )
-            
+
             // store detail into repository
             |> Option.iter ( fun (item, itemDetail) -> x.ActiveRepository.SetDetail item.Id x.Name itemDetail )
         with

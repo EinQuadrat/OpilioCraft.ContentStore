@@ -11,7 +11,7 @@ open OpilioCraft.ContentStore.Core
 [<Extension>]
 type ExceptionExtension =
     [<Extension>]
-    static member inline ToError(exn : System.Exception, errorCategory, targetObject : obj) =
+    static member ToError(exn : System.Exception, errorCategory, targetObject : obj) =
         ErrorRecord(exn, null, errorCategory, targetObject)
 
 // base class for all content store framework related commands
@@ -19,7 +19,7 @@ type ExceptionExtension =
 type public CommandBase () =
     inherit PSCmdlet ()
 
-    member val ContentStoreManager = lazy ( new ContentStoreManager() ) with get
+    member val ContentStoreManager = lazy ( ContentStoreManager.CreateInstance() ) with get
 
     member x.ToAbsolutePath (path : string) =
         if Path.IsPathRooted(path)
@@ -51,7 +51,7 @@ type public CommandBase () =
         |> ParameterBindingException
         |> x.ThrowAsTerminatingError errorCategory
 
-    // basic functionality provided for all mmtoolkit commands
+    // basic functionality provided for all content store framework commands
     override x.BeginProcessing () =
         base.BeginProcessing ()
 
