@@ -12,8 +12,7 @@ type public SetItemDetailCommand () =
     inherit RepositoryCommandBase ()
 
     // validator
-    static let isWriteable =
-        function
+    static let isWriteable = function
         | Slot.Camera
         | Slot.DateTaken -> false
         | slot when slot.StartsWith(SlotPrefix.ExifTool) -> false
@@ -59,7 +58,7 @@ type public SetItemDetailCommand () =
                 |> Some
 
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
-            |> Option.map x.ActiveRepository.FetchItem
+            |> Option.map x.ActiveRepository.GetItem
 
             // automatic type conversion
             |> Option.map
@@ -79,4 +78,4 @@ type public SetItemDetailCommand () =
             // store detail into repository
             |> Option.iter ( fun (item, itemDetail) -> x.ActiveRepository.SetDetail item.Id x.Name itemDetail )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

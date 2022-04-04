@@ -52,4 +52,4 @@ type public GetItemDetailsCommand () =
                     result |> x.WriteObject
                 )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

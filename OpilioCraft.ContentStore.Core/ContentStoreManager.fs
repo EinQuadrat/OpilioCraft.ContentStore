@@ -45,15 +45,9 @@ type ContentStoreManager private () =
                 // will throw InvalidUserSettingsException if config file is of wrong format
                 // will throw IncompatibleVersionException if version in config file is not framework version
 
-            // check ruleset
-            try
-                Heuristik.OwnerRuleSet |> ignore
-            with
-            | exn -> raise (RuleSetError(Name = Settings.OwnerRuleSetFilename, Exception = exn))
-
             // create instance
             new ContentStoreManager ()
         with
-        | exn -> Console.WriteLine $"unexpected exception: {exn.Message}"; raise exn
+            | exn -> Console.WriteLine $"unexpected exception: {exn.Message}"; raise exn
         
 and DisposeDelegate = unit -> unit

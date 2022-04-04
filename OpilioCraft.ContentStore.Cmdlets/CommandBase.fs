@@ -11,8 +11,7 @@ open OpilioCraft.ContentStore.Core
 [<Extension>]
 type ExceptionExtension =
     [<Extension>]
-    static member ToError(exn : System.Exception, errorCategory, targetObject : obj) =
-        ErrorRecord(exn, null, errorCategory, targetObject)
+    static member ToError(exn, errorCategory, targetObject) = ErrorRecord(exn, null, errorCategory, targetObject)
 
 // base class for all content store framework related commands
 [<AbstractClass>]
@@ -35,7 +34,7 @@ type public CommandBase () =
         maybe |> Option.filter condition |> x.WarningIfNone failMessage
 
     member x.TryFileExists errorMessage path =
-        path |> Some |> x.Assert File.Exists errorMessage
+        Some path |> x.Assert File.Exists errorMessage
 
     // simplify error handling
     member x.WriteAsError errorCategory (exn : #System.Exception) =
@@ -58,7 +57,7 @@ type public CommandBase () =
         try
             x.ContentStoreManager.Force () |> ignore
         with
-        | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
+            | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
 
     override x.EndProcessing () =
         if x.ContentStoreManager.IsValueCreated then x.ContentStoreManager.Value.Dispose ()

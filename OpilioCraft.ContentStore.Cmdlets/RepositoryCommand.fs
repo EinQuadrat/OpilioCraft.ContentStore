@@ -26,4 +26,4 @@ type public RepositoryCommandBase () as this =
 
             x.RepositoryInstance.Force () |> ignore
         with
-        | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable 
+            | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable 

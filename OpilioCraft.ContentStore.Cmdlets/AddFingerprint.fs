@@ -32,4 +32,4 @@ type public AddFingerprintCommand () =
             |> Option.map ( fun fp -> x.InputObject.Members.Add(PSNoteProperty("Fingerprint", fp.Value)) )
             |> Option.iter ( fun _ -> if x.PassThru.IsPresent then x.InputObject |> x.WriteObject )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

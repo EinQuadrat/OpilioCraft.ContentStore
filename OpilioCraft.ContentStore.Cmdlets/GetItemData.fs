@@ -35,7 +35,7 @@ type public GetItemDataCommand () =
 
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
 
-            |> Option.map x.ActiveRepository.FetchItem
+            |> Option.map x.ActiveRepository.GetItem
             |> Option.iter x.WriteObject
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

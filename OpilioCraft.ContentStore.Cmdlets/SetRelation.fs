@@ -62,4 +62,4 @@ type public SetRelationCommand () =
             then
                 x.ActiveRepository.AddRelation fromId.Value { Target = toId.Value; IsA = relType.Value }
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

@@ -22,7 +22,7 @@ type public RegisterItemCommand () =
         try
             x.ContentStoreManager.Value.UseExifTool()
         with
-        | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.NotSpecified
+            | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.NotSpecified
 
     override x.ProcessRecord () =
         base.ProcessRecord ()
@@ -46,7 +46,7 @@ type public RegisterItemCommand () =
                 )
             |> Option.iter x.WriteObject
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
 and ItemId =
     {

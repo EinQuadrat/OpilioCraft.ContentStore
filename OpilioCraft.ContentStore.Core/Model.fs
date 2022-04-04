@@ -6,7 +6,7 @@ open OpilioCraft.FSharp.Prelude
 // exceptions
 exception UnknownRepositoryException of Name : string
     with override x.Message = $"[ContentStore] no repository with name \"{x.Name}\" found; please check framework configuration"
-exception RuleSetError of Name : string * Exception : System.Exception
+
 
 // framework config
 type FrameworkConfig =

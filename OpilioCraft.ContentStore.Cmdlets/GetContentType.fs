@@ -30,7 +30,7 @@ type public GetContentTypeCommand () =
                 )
             |> Option.iter x.WriteObject
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
 and ContentType =
     {

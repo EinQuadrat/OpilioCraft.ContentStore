@@ -41,7 +41,7 @@ type public GetItemDetailCommand () =
 
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
 
-            |> Option.map x.ActiveRepository.FetchItem
+            |> Option.map x.ActiveRepository.GetItem
             |> Option.iter
                 ( fun item ->
                     if item.Details.ContainsKey(x.Name)
@@ -51,4 +51,4 @@ type public GetItemDetailCommand () =
                         x.DefaultValue |> x.WriteObject
                 )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

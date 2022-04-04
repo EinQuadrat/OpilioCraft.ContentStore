@@ -48,4 +48,4 @@ type public ResetItemDetailsCommand () =
                 )
 
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

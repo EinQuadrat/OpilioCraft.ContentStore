@@ -17,4 +17,3 @@ module internal Settings =
 
     // configuration files
     let FrameworkConfigFilename = Path.Combine(AppDataLocation, "config.json")
-    let OwnerRuleSetFilename = Path.Combine(AppDataLocation, "ruleset-owner.json")

@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="CommandBase.fs" />
     <Compile Include="RepositoryCommand.fs" />
+    <Compile Include="ConditionHelper.fs" />
     <Compile Include="InitializeContentStoreFramework.fs" />
     <Compile Include="GetFingerprint.fs" />
     <Compile Include="AddFingerprint.fs" />
@@ -34,11 +35,18 @@
     <Compile Include="RemoveRelation.fs" />
     <Compile Include="ClearRelations.fs" />
     <Compile Include="ResetItemDetails.fs" />
-    <Compile Include="SetDateTaken.fs" />
     <Compile Include="GetOwner.fs" />
+    <Compile Include="SetDateTaken.fs" />
+    <Compile Include="SelectItems.fs" />
+    <Compile Include="ExportItems.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="OpilioCraft.FSharp.Heuristic" Version="1.0.0" />
+    <PackageReference Include="OpilioCraft.FSharp.OQL" Version="1.2.1" />
+    <PackageReference Include="OpilioCraft.FSharp.Prelude" Version="1.4.2" />
+    <PackageReference Include="OpilioCraft.FSharp.YaLisp" Version="1.3.0" />
+    <PackageReference Include="OpilioCraft.FSharp.YaLisp.StandardLib" Version="1.2.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.0" />
   </ItemGroup>
 

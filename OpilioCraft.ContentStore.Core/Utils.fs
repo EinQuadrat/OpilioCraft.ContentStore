@@ -10,7 +10,7 @@ let getContentCategory (fi : FileInfo) : ContentCategory =
     match fi.Extension.ToLower() with
     | Match("^(\.(arw|jpe?g|tiff?|gif))$") _ -> ContentCategory.Image
     | Match("^(\.(mov|mp4|mts))$") _ -> ContentCategory.Movie
-    | ext -> ContentCategory.Unknown
+    | _ -> ContentCategory.Unknown
 
 let getContentType (fi : FileInfo) : ContentType =
     {
@@ -77,9 +77,10 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
             result.Add(Slot.Camera, exif |> ExifToolHelper.extractCamera |> ItemDetail.String )
 
             exif.["EXIF:DateTimeOriginal"]
-                |> Option.orElse exif.["File:FileModifyDate"]
-                |> Option.bind ExifToolHelper.tryAsDateTime
-                |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
+            |> Option.orElse exif.["File:FileModifyDate"]
+            |> Option.bind ExifToolHelper.tryAsDateTime
+            |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
+
         | _ -> ignore ()
 
     | ContentCategory.Movie ->
@@ -90,11 +91,12 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
             result.Add(Slot.Camera, exif |> ExifToolHelper.extractCamera |> ItemDetail.String )
 
             exif.["EXIF:DateTimeOriginal"]
-                |> Option.orElse exif.["H264:DateTimeOriginal"]
-                |> Option.orElse exif.["QuickTime:TrackCreateDate"]
-                |> Option.orElse exif.["File:FileModifyDate"]
-                |> Option.bind ExifToolHelper.tryAsDateTime
-                |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
+            |> Option.orElse exif.["H264:DateTimeOriginal"]
+            |> Option.orElse exif.["QuickTime:TrackCreateDate"]
+            |> Option.orElse exif.["File:FileModifyDate"]
+            |> Option.bind ExifToolHelper.tryAsDateTime
+            |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
+
         | _ -> ignore ()
 
     | _ -> ignore ()

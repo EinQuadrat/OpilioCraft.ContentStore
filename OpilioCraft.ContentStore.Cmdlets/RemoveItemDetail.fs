@@ -11,8 +11,7 @@ type public RemoveItemDetailCommand () =
     inherit RepositoryCommandBase ()
 
     // validator
-    static let isWriteable =
-        function
+    static let isWriteable = function
         | Slot.Camera
         | Slot.DateTaken -> false
         | slot when slot.StartsWith(SlotPrefix.ExifTool) -> false
@@ -55,4 +54,4 @@ type public RemoveItemDetailCommand () =
 
             |> Option.iter ( fun id -> x.ActiveRepository.UnsetDetail id x.Name )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

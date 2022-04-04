@@ -46,7 +46,7 @@ type public GetItemStatusCommand () =
                 }
                 |> x.WriteObject
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
 and StatusByPath =
     {

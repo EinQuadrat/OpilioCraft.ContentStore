@@ -64,4 +64,4 @@ type public RemoveRelationCommand () =
                     |> x.WarningIfNone $"invalid relation type: {x.RelationType}"
                     |> Option.iter ( fun relType -> x.ActiveRepository.ForgetRelationTo fromId.Value { Target = toId.Value; IsA = relType } )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

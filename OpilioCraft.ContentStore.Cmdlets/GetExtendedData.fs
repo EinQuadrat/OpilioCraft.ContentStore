@@ -26,7 +26,7 @@ type public GetExtendedDataCommand () =
         try
             x.ContentStoreManager.Value.UseExifTool()
         with
-        | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
+            | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
 
     override x.ProcessRecord() =
         base.ProcessRecord()
@@ -50,7 +50,7 @@ type public GetExtendedDataCommand () =
                 )
             |> Option.iter x.WriteObject
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
 and ExtendedData =
     {

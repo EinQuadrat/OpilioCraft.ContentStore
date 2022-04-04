@@ -14,8 +14,7 @@ type public SetDateTakenCommand () =
     let adjustDateTaken (itemDetails : ItemDetails) (offset : TimeSpan) =
         let tryGetValue = tryWrapper itemDetails.TryGetValue
 
-        let isDateTime =
-            function
+        let isDateTime = function
             | ItemDetail.DateTime dateTime -> Some dateTime
             | _ -> None
     
@@ -66,7 +65,7 @@ type public SetDateTakenCommand () =
 
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
 
-            |> Option.map x.ActiveRepository.FetchItem
+            |> Option.map x.ActiveRepository.GetItem
             |> Option.iter
                 ( fun item ->
                     if x.Reset.IsPresent && item.Details.ContainsKey(Slot.DateTakenOriginal)
@@ -80,4 +79,4 @@ type public SetDateTakenCommand () =
                         x.ActiveRepository.SetDetails item.Id modifications
                 )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

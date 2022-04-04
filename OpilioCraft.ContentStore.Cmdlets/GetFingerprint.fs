@@ -39,7 +39,7 @@ type public GetFingerprintCommand () =
                         { Path = path; TypedFingerprint.Fingerprint = qfp } |> x.WriteObject
                 )
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
 and TypedFingerprint =
     {

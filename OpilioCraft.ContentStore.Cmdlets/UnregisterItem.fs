@@ -34,4 +34,4 @@ type public UnregisterItemCommand () =
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
             |> Option.iter x.ActiveRepository.Forget
         with
-        | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

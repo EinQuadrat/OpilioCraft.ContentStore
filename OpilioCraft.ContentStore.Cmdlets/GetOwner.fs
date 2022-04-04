@@ -1,28 +1,63 @@
 ﻿namespace OpilioCraft.ContentStore.Cmdlets
 
+open System
 open System.Management.Automation
-open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Get, "Owner")>]
-type public GetOwnerCmdlet () =
-    inherit CommandBase ()
-       
-    let mutable _rules = None
+open OpilioCraft.FSharp.Prelude
+open OpilioCraft.FSharp.Heuristic
+
+
+[<Cmdlet(VerbsCommon.Get, "Owner", DefaultParameterSetName = "ByPath")>]
+[<OutputType(typeof<string>)>]
+type public GetOwnerCommand () =
+    inherit RepositoryCommandBase ()
+
+    // cmdlet params
+    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
+    [<Alias("FullName")>] // to be compatible with Get-Item result
+    member val Path = String.Empty with get, set
+
+    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
+    member val Id = String.Empty with get, set
+
+    [<Parameter(Mandatory=true)>]
+    member val Model = String.Empty with get, set
 
     [<Parameter>]
-    member val InputObject : PSObject = PSObject.AsPSObject(System.String.Empty) with get, set
+    member val DefaultOwner = "N/A" with get, set
 
-    override x.BeginProcessing () =
-        base.BeginProcessing () // initialize MMToolkit
-        
+    member val Heuristic : Heuristic option = None with get, set
+
+    // cmdlet funtionality
+    override x.BeginProcessing() =
+        base.BeginProcessing()
+
         try
-            _rules <- Some <| Heuristik.OwnerRuleSet
+            x.Heuristic <- Heuristic x.Model |> Some
         with
-        | :? RuleSetError as exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.InvalidData
-        | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
-    override x.ProcessRecord () =
-        base.ProcessRecord ()
+    override x.ProcessRecord() =
+        base.ProcessRecord()
 
-    override x.EndProcessing () =
-        base.EndProcessing ()
+        try
+            if x.Id |> String.IsNullOrEmpty // parameter set ByPath?
+            then
+                x.Path
+                |> x.ToAbsolutePath
+                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
+                |> Option.map Fingerprint.fingerprintAsString
+            else
+                x.Id
+                |> Some
+
+            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
+
+            |> Option.map x.ActiveRepository.GetItem
+            |> Option.bind x.Heuristic.Value.Apply
+            |> Option.map ( fun flexVal -> flexVal.ToString() )
+            |> Option.defaultValue x.DefaultOwner
+
+            |> x.WriteObject
+        with
+            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

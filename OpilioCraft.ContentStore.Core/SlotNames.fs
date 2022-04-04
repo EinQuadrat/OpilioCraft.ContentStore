@@ -21,6 +21,10 @@ module Slot =
     [<Literal>]
     let ExifTool = "ExifTool"
 
+    /// Owner of the content
+    [<Literal>]
+    let Owner = "Owner"
+
 [<RequireQualifiedAccess>]
 module SlotPrefix =
      /// Prefix of all entries returned by ExifTool

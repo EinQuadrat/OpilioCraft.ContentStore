@@ -9,7 +9,8 @@ open System.Text.Json.Serialization
 open OpilioCraft.FSharp.Prelude
 open Utils // load FileIdentifier extensions
 
-exception RepositoryNotFoundError of root : string
+exception RepositoryNotFoundError of Root : string
+    with override x.ToString () = $"no repository found at {x.Root}"
 
 // Repository main class
 type Repository private (root : string, config : RepositoryConfig, forcePrefetch) as this =
@@ -37,6 +38,8 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
     let storageSection = if Path.IsPathRooted(config.Layout.Storage) then config.Layout.Storage else root >+> config.Layout.Storage
 
     let itemFile (id : ItemId) = itemsSection >+> $"{id}.json"
+    let itemIdFromFilename (filename : string) = filename.Substring(0, filename.Length - ".json".Length)
+    let itemIdFromFileInfo (fi : FileInfo) = fi.Name |> itemIdFromFilename
     let contentFile (id : ItemId) ext = storageSection >+> $"{id}{ext}"
 
     // caching
@@ -70,26 +73,17 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
     member x.PopulateCache () =
         Directory.EnumerateFiles(itemsSection, "*.json")
         |> Seq.map FileInfo
-        |> Seq.map ( fun fi -> fi.Name.Substring(0, fi.Name.Length - fi.Extension.Length) )
+        |> Seq.map ( fun fi -> fi |> itemIdFromFileInfo )
             // filename without extension = repository item id
-        |> Seq.iter ( fun (id : ItemId) -> if not <| cache.ContainsKey(id) then cache.Add(id, x.FetchItem id) )
+        |> Seq.iter ( fun id -> if not <| cache.ContainsKey(id) then cache.Add(id, x.FetchItem id) )
 
-    // existence
-    member _.IsManagedId =
-        itemFile >> File.Exists
-
-    // item handling
-    member _.FetchItem (id : ItemId) : RepositoryItem =
-        if not <| cache.ContainsKey(id)
-        then
-            try
-                let itemAsJson = id |> itemFile |> File.ReadAllText in
-                JsonSerializer.Deserialize<RepositoryItem>(itemAsJson, jsonOptions)
-                |> fun item -> cache.[id] <- item
-            with
+    // low-level item access; use GetItem() or GetItemWithoutCaching instead
+    member private _.FetchItem (id : ItemId) : RepositoryItem =
+        try
+            let itemAsJson = id |> itemFile |> File.ReadAllText in
+            JsonSerializer.Deserialize<RepositoryItem>(itemAsJson, jsonOptions)
+        with
             | exn -> failwith $"[{nameof Repository}] cannot read item data for id {id}: {exn.Message}"
-
-        cache.[id]
 
     member private _.StoreItem (item : RepositoryItem) =
         try
@@ -97,20 +91,26 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
             <| fun uri -> let itemAsJson = JsonSerializer.Serialize(item, jsonOptions) in File.WriteAllText(uri, itemAsJson)
             cache.[item.Id] <- item // update cache
         with
-        | exn -> item.Id |> cache.Remove |> ignore; reraise() // cleanup cache
+            | _ -> item.Id |> cache.Remove |> ignore; reraise() // cleanup cache
 
-    member _.CloneItem (id : ItemId) (destFile : string) =
-        try
-            File.Copy(id |> itemFile, destFile, true)
-        with
-        | exn -> failwith $"[{nameof Repository}] cannot clone item file for id {id}: {exn.Message}"
+    // existence
+    member _.IsManagedId =
+        itemFile >> File.Exists
 
+    // item access
+    member x.GetItem (id : ItemId) : RepositoryItem =
+        if not <| cache.ContainsKey(id) then cache.[id] <- x.FetchItem id // populate cache on demand
+        cache.[id]        
+
+    member x.GetItemWithoutCaching (id : ItemId) : RepositoryItem =
+        x.FetchItem id
+        
     // relations
     member x.HasRelations (id : ItemId) : bool =
-        id |> x.FetchItem |> (fun item -> item.Relations.Length > 0)
+        id |> x.GetItem |> (fun item -> item.Relations.Length > 0)
            
     member x.GetRelations id =
-        id |> x.FetchItem |> (fun item -> item.Relations)
+        id |> x.GetItem |> (fun item -> item.Relations)
     
     member x.IsRelatedTo (id : ItemId) (targetId : ItemId) : bool =
         id |> x.GetRelations |> List.exists (fun rel -> rel.Target = targetId)
@@ -119,55 +119,55 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
         id |> x.GetRelations |> List.exists (fun rel -> (rel.Target = targetId) && (rel.IsA = relType))
 
     member x.AddRelation id (rel : Relation) =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         if not(x.HasRelationTo id rel.Target rel.IsA) then { item with Relations = [ rel ] |> List.append item.Relations } |> x.StoreItem
 
     member x.ForgetRelationTo id specificRel =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         { item with Relations = item.Relations |> List.filter ( fun rel -> rel <> specificRel ) } |> x.StoreItem
 
     member x.ForgetRelationsTo id targetId =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         { item with Relations = item.Relations |> List.filter (fun rel -> rel.Target <> targetId) } |> x.StoreItem
 
     member x.ForgetRelations id =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         { item with Relations = [] } |> x.StoreItem
 
     // details
     member x.HasDetail id name =
-        let item = id |> x.FetchItem in item.Details.ContainsKey(name)
+        let item = id |> x.GetItem in item.Details.ContainsKey(name)
 
     member x.GetDetail id name defaultValue =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         if item.Details.ContainsKey(name) then item.Details.[name] else defaultValue
 
     member x.SetDetail id name value =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         item.Details.[name] <- value
         item |> x.StoreItem
 
     member x.GetDetails =
-        x.FetchItem >> fun item -> item.Details
+        x.GetItem >> fun item -> item.Details
 
     member x.SetDetails id modifications =
-        let item = id |> x.FetchItem
+        let item = id |> x.GetItem
         modifications |> Map.iter ( fun key value -> item.Details.[key] <- value )        
         item |> x.StoreItem
 
     member x.SetDetailsTo id itemDetails =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         { item with Details = itemDetails } |> x.StoreItem
 
     member x.UnsetDetail id name =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         
         name
         |> item.Details.Remove
         |> fun needsUpdate -> if needsUpdate then item |> x.StoreItem
 
     member x.UnsetDetails id (names : string list) =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         
         names
         |> List.map item.Details.Remove
@@ -176,7 +176,7 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
 
     // data files
     member x.HasFile id =
-        let item = id |> x.FetchItem in
+        let item = id |> x.GetItem in
         (id, item.ContentType.FileExtension) ||> contentFile |> File.Exists
 
     member private x.StoreFile id (fileInfo : FileInfo) =
@@ -185,27 +185,29 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
         try
             File.Copy(fileInfo.FullName, dataFile, false) // prevent accidential overwrite of existing files
         with
-        | exn -> failwith $"[{nameof Repository}] cannot store file for id {id}: {exn.Message}"
+            | exn -> failwith $"[{nameof Repository}] cannot store file for id {id}: {exn.Message}"
 
     member x.CloneFile id destFile =
-        let item = id |> x.FetchItem
+        let item = id |> x.GetItem
         let reposFile = (id, item.ContentType.FileExtension) ||> contentFile
 
         try
             File.Copy(reposFile, destFile)
         with
-        | exn -> failwith $"[{nameof Repository}] cannot clone file for id {id}: {exn.Message}"
+            | exn -> failwith $"[{nameof Repository}] cannot clone file for id {id}: {exn.Message}"
 
     // forget data
     member x.Forget (id : ItemId) : unit =
         if id |> x.IsManagedId
         then
             try
-                let item = id |> x.FetchItem
+                id |> cache.Remove |> ignore
                 id |> itemFile |> File.Delete
+                
+                let item = id |> x.GetItem in
                 (id, item.ContentType.FileExtension) ||> contentFile |> File.Delete
             with
-            | exn -> failwith $"[{nameof Repository}] cannot cleanup resources related to id {id}: {exn.Message}"
+                | exn -> failwith $"[{nameof Repository}] cannot cleanup resources related to id {id}: {exn.Message}"
 
     // high-level api
     member x.AddToRepository(fident : FileIdentificator, ?contentCategoryOverwrite) : ItemId =
@@ -231,9 +233,14 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
 
         itemId // facilitate chaining
 
+    member x.GetItemIds () : seq<ItemId> =
+        itemsSection
+        |> Directory.EnumerateFiles
+        |> Seq.map (fun filename -> filename |> FileInfo |> (fun fi -> fi.Name |> itemIdFromFilename))
+
     // details maintenance
     member x.ReadDetailsFromFile id =
-        let item = id |> x.FetchItem
+        let item = id |> x.GetItem
         let contentFileInfo = (id, item.ContentType.FileExtension) ||> contentFile |> FileInfo
         Utils.getCategorySpecificDetails contentFileInfo item.ContentType.Category
 
