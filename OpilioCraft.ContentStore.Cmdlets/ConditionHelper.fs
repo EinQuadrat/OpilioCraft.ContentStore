@@ -3,57 +3,62 @@
 open System
 
 open OpilioCraft.FSharp.Prelude
-open OpilioCraft.FSharp.OQL
-open OpilioCraft.FSharp.YaLisp
 open OpilioCraft.ContentStore.Core
+open OpilioCraft.Lisp
+
+type ObjectPathRuntime = OpilioCraft.ObjectPath.IRuntime
+type LispRuntime = OpilioCraft.Lisp.IRuntime
 
 // lisp function to integrate OQL
-let applyObjectQuery (oqlRuntime : IOqlRuntime) (_ : IYaLispRuntime) (exprList : YaLispExpression list) : YaLispExpression =
-    match exprList with
-    | [ YaLispAtom (FlexibleValue.String oql) ] ->
-        oqlRuntime.TryRun oql
-        |> Option.map (function | :? ItemDetail as itemDetail -> itemDetail.Unwrap | otherwise -> otherwise)
-        |> Option.map (FlexibleValue.Wrap >> YaLispAtom)
-        |> Option.defaultValue (YaLispSymbol "#UNKNOWN-PROPERTY") // force no-match
+let itemDetailHandler (incoming : obj) : obj =
+    match incoming with
+    | :? ItemDetail as itemDetail -> itemDetail.Unwrap
+    | otherwise -> otherwise
 
-    | [ (YaLispAtom (FlexibleValue.String oql)) ; YaLispAtom defaultValue ] ->
-        oqlRuntime.RunWithDefault oql (defaultValue :> obj)
+let applyObjectQuery (runtime : ObjectPathRuntime) _ (exprList : Expression list) : Expression =
+    match exprList with
+    | [ Atom (FlexibleValue.String oql) ] ->
+        runtime.TryRun oql
+        |> Option.map itemDetailHandler
+        |> Option.map (FlexibleValue.Wrap >> Atom)
+        |> Option.defaultValue (Symbol "#UNKNOWN-PROPERTY") // force no-match
+
+    | [ (Atom (FlexibleValue.String oql)) ; Atom defaultValue ] ->
+        runtime.RunWithDefault oql (defaultValue :> obj)
         |> (function | :? ItemDetail as itemDetail -> itemDetail.Unwrap | otherwise -> otherwise)
-        |> FlexibleValue.Wrap |> YaLispAtom
+        |> FlexibleValue.Wrap |> Atom
 
     | _ -> raise <| new InvalidOperationException()
 
 // LISP macros
-let macroPropertyIs (exprList : YaLispExpression list) : YaLispExpression =
+let macroPropertyIs (exprList : Expression list) : Expression =
     match exprList with
-    | [ YaLispAtom (FlexibleValue.String oql); YaLispAtom pattern ] ->
-        let getProperty = YaLispList [ YaLispSymbol "property" ; YaLispAtom (FlexibleValue.String oql) ] in
-        YaLispList [ YaLispSymbol "eq" ; getProperty ; YaLispAtom pattern ]
-    | _ -> raise <| InvalidYaLispExpressionException "property-is expects an oql string and an atom as arguments"
+    | [ Atom (FlexibleValue.String _) ; Atom _ ] as [ objectPath ; pattern ]->
+        List [ Symbol "eq" ; List [ Symbol "property" ; objectPath ] ; pattern ]
+    | _ -> raise <| InvalidLispExpressionException "property-is expects an oql string and an atom as arguments"
 
-let macroPropertyIsNot (exprList : YaLispExpression list) : YaLispExpression =
+let macroPropertyIsNot (exprList : Expression list) : Expression =
     match exprList with
-    | [ YaLispAtom (FlexibleValue.String oql); YaLispAtom pattern ] ->
-        let getProperty = YaLispList [ YaLispSymbol "property" ; YaLispAtom (FlexibleValue.String oql) ] in
-        YaLispList [ YaLispSymbol "not" ; YaLispList [ YaLispSymbol "eq" ; getProperty ; YaLispAtom pattern ] ]
-    | _ -> raise <| InvalidYaLispExpressionException "property-is expects an oql string and an atom as arguments"
+    | [ Atom (FlexibleValue.String _); Atom _ ] as [ objectPath ; pattern ]->
+        List [ Symbol "not" ; List [ Symbol "property-is" ; objectPath ; pattern ] ]
+    | _ -> raise <| InvalidLispExpressionException "property-is expects an oql string and an atom as arguments"
 
 // runtimes
 let createRuntimes () =
-    let oqlRuntime = new OpilioCraft.FSharp.OQL.DefaultOqlRuntime () :> OpilioCraft.FSharp.OQL.IOqlRuntime
+    let opRuntime : ObjectPathRuntime = new OpilioCraft.ObjectPath.DefaultRuntime ()
 
-    let lispRuntime : IYaLispRuntime = new DefaultYaLispRuntime (OpilioCraft.FSharp.YaLisp.StandardLib.init)
-    lispRuntime.RegisterFunction "property" (applyObjectQuery oqlRuntime)
+    let lispRuntime : LispRuntime = new OpilioCraft.Lisp.DefaultRuntime (OpilioCraft.Lisp.StandardLib.init)
+    lispRuntime.RegisterFunction "property" (applyObjectQuery opRuntime)
     lispRuntime.RegisterMacro "property-is" macroPropertyIs
-    lispRuntime.RegisterMacro "property-is-not" macroPropertyIs
+    lispRuntime.RegisterMacro "property-is-not" macroPropertyIsNot
 
-    oqlRuntime, lispRuntime
+    opRuntime, lispRuntime
 
 // conditions
-let applyCondition (oqlRuntime : IOqlRuntime) (lispRuntime : IYaLispRuntime) compiledCondition item =
-    oqlRuntime.ObjectData <- item
+let applyCondition (opRuntime : ObjectPathRuntime) (lispRuntime : LispRuntime) compiledCondition item =
+    opRuntime.ObjectData <- item
 
     lispRuntime.Eval compiledCondition
     |> function
-        | YBoolean result -> result
+        | LispBoolean result -> result
         | _ -> invalidArg "condition" "condition has to result into a boolean value"

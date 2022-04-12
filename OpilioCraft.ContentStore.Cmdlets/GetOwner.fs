@@ -33,7 +33,7 @@ type public GetOwnerCommand () =
         base.BeginProcessing()
 
         try
-            x.Heuristic <- Heuristic x.Model |> Some
+            x.Heuristic <- Heuristic(x.Model, ConditionHelper.itemDetailHandler) |> Some
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 

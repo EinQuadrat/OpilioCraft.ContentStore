@@ -13,6 +13,7 @@ type FrameworkConfig =
     {
         Version : System.Version
         Repositories : Map<string,string>
+        Models : Map<string,string>
     }
 
 // repository config
@@ -100,3 +101,7 @@ type RepositoryItem = // data structure used by Repository
 
     [<JsonIgnore>]
     member x.AsOfLocal = x.AsOf.ToLocalTime()
+
+// ----------------------------------------------------------------------------
+
+type Heuristic = string -> ItemDetails -> ItemDetail option

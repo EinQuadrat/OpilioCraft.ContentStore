@@ -20,9 +20,9 @@ type public RepositoryCommandBase () as this =
         try
             if String.IsNullOrEmpty(x.Repository)
             then
-                x.RepositoryInstance <- lazy ( Repository.LoadDefaultRepository() )
+                x.RepositoryInstance <- lazy ( x.ContentStoreManager.Value.LoadDefaultRepository() )
             else
-                x.RepositoryInstance <- lazy ( Repository.LoadRepository(x.Repository) )
+                x.RepositoryInstance <- lazy ( x.ContentStoreManager.Value.LoadRepository(x.Repository) )
 
             x.RepositoryInstance.Force () |> ignore
         with

@@ -1,5 +1,6 @@
 ﻿namespace OpilioCraft.ContentStore.Core
 
+open System.IO
 open System.Text.Json
 open OpilioCraft.FSharp.Prelude
    
@@ -19,7 +20,13 @@ module internal UserSettings =
     let verifyFrameworkConfig () =
         frameworkConfig ()
         |> Verify.isVersion Settings.FrameworkVersion
-        |> ignore
+
+        |> fun config -> config.Models
+        |> Map.iter ( fun modelName  modelFile ->
+            if not <| File.Exists modelFile
+            then
+                raise <| InvalidUserSettingsException(Settings.FrameworkConfigFilename, $"file for model {modelName} cannot be found")
+            )
 
     // accessors
     let RepositoryPath name =

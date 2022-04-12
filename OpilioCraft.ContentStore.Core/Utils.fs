@@ -65,7 +65,7 @@ let private transformExifToItemDetails (exif : ExifToolResult) =
     exif.ParsedJson.Properties()
     |> Array.fold ( fun map (name, value) -> (transformJsonValue name value, map) ||> Map.add name ) Map.empty
     
-let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategory) : ItemDetails =
+let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategory) (heuristic : Heuristic) : ItemDetails =
     let result = new ItemDetails()
 
     match contentCategory with
@@ -74,12 +74,17 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
         | Some exif ->
             result.Add(Slot.ExifTool, true |> ItemDetail.Boolean) // indicate that we have EXIF data
             for item in exif |> transformExifToItemDetails do result.Add($"{SlotPrefix.ExifTool}{item.Key}", item.Value)
-            result.Add(Slot.Camera, exif |> ExifToolHelper.extractCamera |> ItemDetail.String )
+
+            exif
+            |> ExifToolHelper.tryExtractCamera
+            |> Option.map ItemDetail.String
+            |> Option.orElse (result |> heuristic "camera")
+            |> Option.iter ( fun camera -> result.Add(Slot.Camera, camera) )
 
             exif.["EXIF:DateTimeOriginal"]
             |> Option.orElse exif.["File:FileModifyDate"]
             |> Option.bind ExifToolHelper.tryAsDateTime
-            |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
+            |> Option.iter ( fun dateTaken -> result.Add(Slot.DateTaken, dateTaken |> ItemDetail.DateTime) )
 
         | _ -> ignore ()
 
@@ -88,7 +93,13 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
         | Some exif ->
             result.Add(Slot.ExifTool, true |> ItemDetail.Boolean) // indicate that we have EXIF data
             for item in exif |> transformExifToItemDetails do result.Add($"{SlotPrefix.ExifTool}{item.Key}", item.Value)
-            result.Add(Slot.Camera, exif |> ExifToolHelper.extractCamera |> ItemDetail.String )
+
+            exif
+            |> ExifToolHelper.tryExtractCamera
+            |> Option.map ItemDetail.String
+            |> Option.orElse (result |> heuristic "camera")
+            |> Option.orElse (ItemDetail.String "NA" |> Some)
+            |> Option.iter ( fun camera -> result.Add(Slot.Camera, camera) )
 
             exif.["EXIF:DateTimeOriginal"]
             |> Option.orElse exif.["H264:DateTimeOriginal"]

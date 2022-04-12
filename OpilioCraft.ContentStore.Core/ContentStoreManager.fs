@@ -1,7 +1,11 @@
 ﻿namespace OpilioCraft.ContentStore.Core
 
 open System
+open System.IO
+open System.Text.Json
+
 open OpilioCraft.FSharp.Prelude
+open OpilioCraft.Lisp.Runtime
 
 /// <summary>Global entry point for using the Content Store Framework.</summary>
 /// <para>
@@ -10,14 +14,37 @@ open OpilioCraft.FSharp.Prelude
 /// <para>
 /// The UseXXX() methods offer a way to control long-term resources. </para>
 [<Sealed>]
-type ContentStoreManager private () =
+type ContentStoreManager private ( frameworkConfig : FrameworkConfig ) =
     inherit DisposableBase ()
 
-    [<Literal>]
-    let ResourceExifTool = "ExifTool"
+    [<Literal>] static let ConfigFilename = "repository.json"
+    [<Literal>] static let DefaultRepository = "DEFAULT"
+    [<Literal>] static let ResourceExifTool = "ExifTool"
 
     let mutable _isDisposed = false
     let mutable _usedResources : Map<string, DisposeDelegate> = Map.empty
+
+    // repository access
+    member _.LoadRepository(repositoryName : string, ?forcePrefetch : bool) =
+        let pathToRepository = UserSettings.RepositoryPath repositoryName
+            // will throw UnknownRepository on a given name not mentioned in configuration file
+
+        if not <| Directory.Exists pathToRepository
+        then
+            raise <| RepositoryNotFoundError pathToRepository
+
+        let pathToConfigFile = Path.Combine(pathToRepository, ConfigFilename)
+
+        let config =
+            UserSettingsHelper.load pathToConfigFile (JsonSerializerOptions())
+            |> Verify.isVersion Repository.Version
+
+        let repos = Repository (pathToRepository, config, forcePrefetch |> Option.defaultValue false)
+
+        
+
+    member x.LoadDefaultRepository(?forcePrefetch : bool) =
+        x.LoadRepository(DefaultRepository, forcePrefetch |> Option.defaultValue false)
 
     // notify resource use
     member _.UseExifTool () =
@@ -45,8 +72,16 @@ type ContentStoreManager private () =
                 // will throw InvalidUserSettingsException if config file is of wrong format
                 // will throw IncompatibleVersionException if version in config file is not framework version
 
+            // load models
+            let models =
+                UserSettings.frameworkConfig().Models
+                |> Map.map (
+                    fun modelName modelPath ->
+                        
+                    )
+
             // create instance
-            new ContentStoreManager ()
+            new ContentStoreManager (UserSettings.frameworkConfig ())
         with
             | exn -> Console.WriteLine $"unexpected exception: {exn.Message}"; raise exn
         

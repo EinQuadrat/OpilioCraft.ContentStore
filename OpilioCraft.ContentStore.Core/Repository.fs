@@ -10,15 +10,12 @@ open OpilioCraft.FSharp.Prelude
 open Utils // load FileIdentifier extensions
 
 exception RepositoryNotFoundError of Root : string
-    with override x.ToString () = $"no repository found at {x.Root}"
+    with override x.ToString () = $"no repository found at location {x.Root}"
 
 // Repository main class
-type Repository private (root : string, config : RepositoryConfig, forcePrefetch) as this =
-    static let ModelVersion = Version(2, 0)
-
-    [<Literal>] static let DefaultRepository = "DEFAULT"
-    [<Literal>] static let ConfigFilename = "repository.json"
-
+type Repository internal (root : string, config : RepositoryConfig, forcePrefetch) as this =
+    static let Implementation = Version(2, 1)
+    
     // json settings
     static let jsonOptions =
         JsonSerializerOptions()
@@ -48,24 +45,9 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
         then
             this.PopulateCache ()
 
-    // repository access
-    static member LoadRepository(repositoryName : string, ?forcePrefetch : bool) =
-        let pathToRepository = UserSettings.RepositoryPath repositoryName
-            // will throw UnknownRepository on a given name not mentioned in configuration file
+    // ------------------------------------------------------------------------
 
-        if not <| Directory.Exists pathToRepository
-        then
-            raise <| RepositoryNotFoundError pathToRepository
-
-        let pathToConfigFile = pathToRepository >+> ConfigFilename
-        let config =
-            UserSettingsHelper.load pathToConfigFile (JsonSerializerOptions())
-            |> Verify.isVersion ModelVersion
-
-        Repository(pathToRepository, config, forcePrefetch |> Option.defaultValue false)
-
-    static member LoadDefaultRepository(?forcePrefetch : bool) =
-        Repository.LoadRepository(DefaultRepository, forcePrefetch |> Option.defaultValue false)
+    static member Version = Implementation
 
     // ------------------------------------------------------------------------
 
@@ -227,6 +209,7 @@ type Repository private (root : string, config : RepositoryConfig, forcePrefetch
                 Relations = List.empty<Relation>
                 Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category
             }
+            // TODO: enrich metadata e.g. by owner
             |> x.StoreItem
             
             fident.FileInfo |> x.StoreFile itemId

@@ -169,15 +169,15 @@ module ExifToolHelper =
         with
         | _ -> Console.Error.WriteLine $"[ExifTool] value is not DateTime compatible: {jvalue.ToString()}"; None
 
-    let extractCamera (exif : ExifToolResult) =
+    let tryExtractCamera (exif : ExifToolResult) : string option =
         let make = exif.["EXIF:Make"] |> Option.map asTrimString |> Option.defaultValue ""
         let model = exif.["EXIF:Model"] |> Option.map asTrimString |> Option.defaultValue ""
     
         match make, model with
-        | "", "" -> "NA"
-        | "", model -> model
-        | make, "" -> make
-        | make, model -> if (model.StartsWith(make)) then model else $"{make} {model}"
+        | "", "" -> None
+        | "", model -> Some model
+        | make, "" -> Some make
+        | make, model -> (if (model.StartsWith(make)) then model else $"{make} {model}") |> Some
 
     // simplify metadata extraction
     let getMetadata (fi : FileInfo) : ExifToolResult option =
