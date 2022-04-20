@@ -9,7 +9,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Get, "ExtendedData")>]
 [<OutputType(typeof<ExtendedData>, typeof<Hashtable>)>]
 type public GetExtendedDataCommand () =
-    inherit CommandBase ()
+    inherit ContentStoreCommand ()
 
     // cmdlet params
     [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
@@ -24,7 +24,7 @@ type public GetExtendedDataCommand () =
         base.BeginProcessing () // initialize MMToolkit
 
         try
-            x.ContentStoreManager.Value.UseExifTool()
+            x.ContentStoreManager.UseExifTool()
         with
             | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
 
@@ -37,7 +37,7 @@ type public GetExtendedDataCommand () =
             |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
             |> Option.map (fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory)
             |> Option.map ( fun (path, category) ->
-                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category
+                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category x.ContentStoreManager.RulesProvider
 
                 if x.AsHashtable.IsPresent
                 then

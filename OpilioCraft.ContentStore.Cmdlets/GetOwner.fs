@@ -4,7 +4,6 @@ open System
 open System.Management.Automation
 
 open OpilioCraft.FSharp.Prelude
-open OpilioCraft.FSharp.Heuristic
 
 
 [<Cmdlet(VerbsCommon.Get, "Owner", DefaultParameterSetName = "ByPath")>]
@@ -19,24 +18,8 @@ type public GetOwnerCommand () =
 
     [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
     member val Id = String.Empty with get, set
-
-    [<Parameter(Mandatory=true)>]
-    member val Model = String.Empty with get, set
-
-    [<Parameter>]
-    member val DefaultOwner = "N/A" with get, set
-
-    member val Heuristic : Heuristic option = None with get, set
-
+    
     // cmdlet funtionality
-    override x.BeginProcessing() =
-        base.BeginProcessing()
-
-        try
-            x.Heuristic <- Heuristic(x.Model, ConditionHelper.itemDetailHandler) |> Some
-        with
-            | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
-
     override x.ProcessRecord() =
         base.ProcessRecord()
 
@@ -54,9 +37,8 @@ type public GetOwnerCommand () =
             |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
 
             |> Option.map x.ActiveRepository.GetItem
-            |> Option.bind x.Heuristic.Value.Apply
-            |> Option.map ( fun flexVal -> flexVal.ToString() )
-            |> Option.defaultValue x.DefaultOwner
+            |> Option.bind (x.ContentStoreManager.RulesProvider.TryApplyRule "GuessOwner")
+            |> Option.defaultValue "#UNKNOWN"
 
             |> x.WriteObject
         with

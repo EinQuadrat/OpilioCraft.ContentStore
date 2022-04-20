@@ -9,14 +9,14 @@ open System.Text.Json.Serialization
 open OpilioCraft.FSharp.Prelude
 open Utils // load FileIdentifier extensions
 
-exception RepositoryNotFoundError of Root : string
-    with override x.ToString () = $"no repository found at location {x.Root}"
-
 // Repository main class
 type Repository internal (root : string, config : RepositoryConfig, forcePrefetch) as this =
-    static let Implementation = Version(2, 1)
+
+    static let ImplementationVersion = Version(2, 0)
     
+    // ------------------------------------------------------------------------
     // json settings
+
     static let jsonOptions =
         JsonSerializerOptions()
         |> fun jsonOpts ->
@@ -26,10 +26,9 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
             jsonOpts.Converters.Add(DetailsConverter())
             jsonOpts
 
-    // cache
-    let cache = new Dictionary<ItemId,RepositoryItem>()
-
+    // ------------------------------------------------------------------------
     // repository filesystem layout
+
     static let (>+>) basePath part = (basePath, part) |> Path.Combine
     let itemsSection = root >+> config.Layout.Items
     let storageSection = if Path.IsPathRooted(config.Layout.Storage) then config.Layout.Storage else root >+> config.Layout.Storage
@@ -39,7 +38,10 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
     let itemIdFromFileInfo (fi : FileInfo) = fi.Name |> itemIdFromFilename
     let contentFile (id : ItemId) ext = storageSection >+> $"{id}{ext}"
 
-    // caching
+    // ------------------------------------------------------------------------
+
+    let cache = new Dictionary<ItemId,RepositoryItem>()
+
     do
         if (config.Prefetch || forcePrefetch)
         then
@@ -47,17 +49,27 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
 
     // ------------------------------------------------------------------------
 
-    static member Version = Implementation
+    let mutable rulesProvider = RulesProvider () // initialize with empty rules table
 
     // ------------------------------------------------------------------------
 
+    static member Version = ImplementationVersion
+
+    // ------------------------------------------------------------------------
     // cache management
+
     member x.PopulateCache () =
         Directory.EnumerateFiles(itemsSection, "*.json")
         |> Seq.map FileInfo
         |> Seq.map ( fun fi -> fi |> itemIdFromFileInfo )
             // filename without extension = repository item id
         |> Seq.iter ( fun id -> if not <| cache.ContainsKey(id) then cache.Add(id, x.FetchItem id) )
+
+    // ------------------------------------------------------------------------
+
+    member x.InjectRules (provider : RulesProvider) = rulesProvider <- provider
+
+    // ------------------------------------------------------------------------
 
     // low-level item access; use GetItem() or GetItemWithoutCaching instead
     member private _.FetchItem (id : ItemId) : RepositoryItem =
@@ -207,7 +219,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
                 AsOf = fident.AsOf
                 ContentType = contentType
                 Relations = List.empty<Relation>
-                Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category
+                Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category rulesProvider
             }
             // TODO: enrich metadata e.g. by owner
             |> x.StoreItem
@@ -225,7 +237,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
     member x.ReadDetailsFromFile id =
         let item = id |> x.GetItem
         let contentFileInfo = (id, item.ContentType.FileExtension) ||> contentFile |> FileInfo
-        Utils.getCategorySpecificDetails contentFileInfo item.ContentType.Category
+        Utils.getCategorySpecificDetails contentFileInfo item.ContentType.Category rulesProvider
 
     member x.ResetDetails id =
         id

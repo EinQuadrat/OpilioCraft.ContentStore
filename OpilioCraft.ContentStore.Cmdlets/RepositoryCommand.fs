@@ -6,7 +6,7 @@ open OpilioCraft.ContentStore.Core
 
 [<AbstractClass>]
 type public RepositoryCommandBase () as this =
-    inherit CommandBase ()
+    inherit ContentStoreCommand ()
 
     [<DefaultValue>] val mutable private RepositoryInstance : Lazy<Repository>
     member _.ActiveRepository = this.RepositoryInstance.Value
@@ -20,9 +20,9 @@ type public RepositoryCommandBase () as this =
         try
             if String.IsNullOrEmpty(x.Repository)
             then
-                x.RepositoryInstance <- lazy ( x.ContentStoreManager.Value.LoadDefaultRepository() )
+                x.RepositoryInstance <- lazy ( x.ContentStoreManager.LoadDefaultRepository() )
             else
-                x.RepositoryInstance <- lazy ( x.ContentStoreManager.Value.LoadRepository(x.Repository) )
+                x.RepositoryInstance <- lazy ( x.ContentStoreManager.LoadRepository(x.Repository) )
 
             x.RepositoryInstance.Force () |> ignore
         with

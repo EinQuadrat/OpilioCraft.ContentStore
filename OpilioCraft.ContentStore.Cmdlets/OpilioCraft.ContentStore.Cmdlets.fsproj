@@ -5,6 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Carsten Schäfer</Authors>
     <Copyright>Copyright (c) 2022 by Carsten Schäfer</Copyright>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <PackageTags>OpilioCraft;PowerShell</PackageTags>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
@@ -14,8 +15,8 @@
 
   <ItemGroup>
     <Compile Include="CommandBase.fs" />
+    <Compile Include="ContentStoreCommand.fs" />
     <Compile Include="RepositoryCommand.fs" />
-    <Compile Include="ConditionHelper.fs" />
     <Compile Include="InitializeContentStoreFramework.fs" />
     <Compile Include="GetFingerprint.fs" />
     <Compile Include="AddFingerprint.fs" />
@@ -35,6 +36,7 @@
     <Compile Include="RemoveRelation.fs" />
     <Compile Include="ClearRelations.fs" />
     <Compile Include="ResetItemDetails.fs" />
+    <Compile Include="Invoke-ItemRule.fs" />
     <Compile Include="GetOwner.fs" />
     <Compile Include="SetDateTaken.fs" />
     <Compile Include="SelectItems.fs" />
@@ -42,10 +44,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpilioCraft.FSharp.Prelude" Version="1.4.3" />
-    <PackageReference Include="OpilioCraft.Lisp" Version="1.0.0" />
-    <PackageReference Include="OpilioCraft.Lisp.StandardLib" Version="1.0.0" />
-    <PackageReference Include="OpilioCraft.ObjectPath" Version="1.0.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
   </ItemGroup>
 

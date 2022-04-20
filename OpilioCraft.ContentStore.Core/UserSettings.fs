@@ -17,16 +17,17 @@ module internal UserSettings =
     let private loadFrameworkConfig = UserSettingsHelper.lazyLoad<FrameworkConfig> Settings.FrameworkConfigFilename frameworkConfigJsonOptions
     let frameworkConfig () = loadFrameworkConfig.Value
 
+    let private verifyRuleFile ruleName ruleDefinitionFile =
+        if not <| File.Exists ruleDefinitionFile
+        then
+            raise <| InvalidUserSettingsException(Settings.FrameworkConfigFilename, $"definition file of rule {ruleName} does not exist")
+
     let verifyFrameworkConfig () =
         frameworkConfig ()
         |> Verify.isVersion Settings.FrameworkVersion
 
-        |> fun config -> config.Models
-        |> Map.iter ( fun modelName  modelFile ->
-            if not <| File.Exists modelFile
-            then
-                raise <| InvalidUserSettingsException(Settings.FrameworkConfigFilename, $"file for model {modelName} cannot be found")
-            )
+        |> UserSettingsHelper.tryGetProperty "Rules"
+        |> Option.iter (Map.iter verifyRuleFile)
 
     // accessors
     let RepositoryPath name =

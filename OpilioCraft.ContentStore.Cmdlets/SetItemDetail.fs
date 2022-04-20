@@ -13,7 +13,6 @@ type public SetItemDetailCommand () =
 
     // validator
     static let isWriteable = function
-        | Slot.Camera
         | Slot.DateTaken -> false
         | slot when slot.StartsWith(SlotPrefix.ExifTool) -> false
         | _ -> true

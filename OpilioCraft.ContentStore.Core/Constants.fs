@@ -30,3 +30,11 @@ module SlotPrefix =
      /// Prefix of all entries returned by ExifTool
     [<Literal>]
     let ExifTool = "ExifTool:"
+
+[<RequireQualifiedAccess>]
+module Defaults =
+    [<Literal>]
+    let UnknownCamera = "NA"
+
+    [<Literal>]
+    let UnknownOwner = "NA"

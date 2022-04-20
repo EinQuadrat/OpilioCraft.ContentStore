@@ -76,7 +76,7 @@ module ExifTool =
             ps.BeginErrorReadLine()
             ps
         with
-        | exn -> Console.Error.Write $"[ExifTool] cannot launch exiftool: {exn.Message}"; reraise()
+            | exn -> Console.Error.Write $"[ExifTool] cannot launch exiftool: {exn.Message}"; reraise()
 
     let createExifToolHandler () = lazy MailboxProcessor<ExifToolCommand>.Start(fun inbox ->
         let exifRuntime = launchExif ()
@@ -130,7 +130,8 @@ type ExifTool() =
     static let mutable _exifHandler = None
 
     do
-        if Interlocked.Increment _refCounter = 1 then // init needed?
+        if Interlocked.Increment _refCounter = 1 // init needed?
+        then
             _exifHandler <- Some <| ExifTool.createExifToolHandler ()
 
     // guarded exiftool access
@@ -149,8 +150,10 @@ type ExifTool() =
 
     // cleanup resources
     override _.DisposeManagedResources () =
-        if _exifHandler.IsSome then
-            if Interlocked.Decrement _refCounter < 1 then
+        if _exifHandler.IsSome
+        then
+            if Interlocked.Decrement _refCounter < 1
+            then
                 ExifTool.Mailbox.Post(Quit)
                 _exifHandler <- None
 
@@ -167,23 +170,22 @@ module ExifToolHelper =
             else
                 jvalue.AsDateTime(CultureInfo.InvariantCulture) |> Some
         with
-        | _ -> Console.Error.WriteLine $"[ExifTool] value is not DateTime compatible: {jvalue.ToString()}"; None
+            | _ -> Console.Error.WriteLine $"[ExifTool] value is not DateTime compatible: {jvalue.ToString()}"; None
 
     let tryExtractCamera (exif : ExifToolResult) : string option =
-        let make = exif.["EXIF:Make"] |> Option.map asTrimString |> Option.defaultValue ""
-        let model = exif.["EXIF:Model"] |> Option.map asTrimString |> Option.defaultValue ""
+        let maker : string option = exif.["EXIF:Make"] |> Option.map asTrimString // EXIF maker tag is named 'make'
+        let model : string option = exif.["EXIF:Model"] |> Option.map asTrimString
     
-        match make, model with
-        | "", "" -> None
-        | "", model -> Some model
-        | make, "" -> Some make
-        | make, model -> (if (model.StartsWith(make)) then model else $"{make} {model}") |> Some
+        match maker, model with
+        | None, None -> None
+        | None, Some _ as (_, model) -> model
+        | Some _, None as (maker, _) -> maker
+        | Some maker, Some model -> (if (model.StartsWith(maker)) then model else $"{maker} {model}") |> Some
+        | _ -> None
 
     // simplify metadata extraction
     let getMetadata (fi : FileInfo) : ExifToolResult option =
         try
             using (ExifTool.Proxy()) ( fun exifTool -> exifTool.RequestMetadata fi.FullName |> Some )
         with
-        | exn ->
-            System.Console.Error.WriteLine $"[ExifTool] cannot process request: {exn.Message}"
-            None
+            | exn -> System.Console.Error.WriteLine $"[ExifTool] cannot process request: {exn.Message}"; None

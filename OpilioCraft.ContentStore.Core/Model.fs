@@ -13,7 +13,7 @@ type FrameworkConfig =
     {
         Version : System.Version
         Repositories : Map<string,string>
-        Models : Map<string,string>
+        Rules : Map<string,string>
     }
 
 // repository config
@@ -69,20 +69,34 @@ type Relation = {
 
 type ItemDetail =
     | Boolean of bool
+    | Float of float
+    | Number of decimal
     | DateTime of System.DateTime
     | TimeSpan of System.TimeSpan
-    | Number of decimal
-    | Float of float
     | String of string
 
     member x.Unwrap : obj =
         match x with
         | Boolean plainValue -> plainValue :> obj
+        | Float plainValue -> plainValue :> obj
+        | Number plainValue -> plainValue :> obj
         | DateTime plainValue -> plainValue :> obj
         | TimeSpan plainValue -> plainValue :> obj
-        | Number plainValue -> plainValue :> obj
-        | Float plainValue -> plainValue :> obj
         | String plainValue -> plainValue :> obj
+
+    static member ofFlexibleValue fval =
+        match fval with
+        | FlexibleValue.Boolean x  -> Boolean x
+        | FlexibleValue.Numeral x  -> decimal x |> Number
+        | FlexibleValue.Float x    -> Float x
+        | FlexibleValue.Decimal x  -> Number x
+        | FlexibleValue.DateTime x -> DateTime x
+        | FlexibleValue.TimeSpan x -> TimeSpan x
+        | FlexibleValue.String x   -> String x
+        // value changing operations
+        | FlexibleValue.Date x     -> x.ToDateTime(System.TimeOnly.MinValue) |> DateTime
+        // unsupported cases
+        | _ -> failwith "cannot convert given FlexibleValue to ItemDetail"
 
 type ItemDetails = System.Collections.Generic.Dictionary<string,ItemDetail>
 
@@ -104,4 +118,5 @@ type RepositoryItem = // data structure used by Repository
 
 // ----------------------------------------------------------------------------
 
-type Heuristic = string -> ItemDetails -> ItemDetail option
+type Rule = ItemDetails -> string option
+type RuleSet = string -> Rule

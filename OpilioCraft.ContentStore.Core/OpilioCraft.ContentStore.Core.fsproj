@@ -5,17 +5,20 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Carsten Schäfer</Authors>
     <Copyright>Copyright (c) 2022 by Carsten Schäfer</Copyright>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="SlotNames.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="UserSettings.fs" />
     <Compile Include="ExifToolHelper.fs" />
+    <Compile Include="ItemDetailHelper.fs" />
+    <Compile Include="RulesProvider.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Repository.fs" />
     <Compile Include="ContentStoreManager.fs" />
@@ -23,8 +26,9 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Data" Version="4.2.8" />
-    <PackageReference Include="OpilioCraft.FSharp.Prelude" Version="1.4.3" />
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
+    <PackageReference Include="OpilioCraft.FSharp.Prelude" Version="1.7.0" />
+    <PackageReference Include="OpilioCraft.Lisp.Runtime" Version="0.6.0" />
+    <PackageReference Include="System.Text.Json" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>

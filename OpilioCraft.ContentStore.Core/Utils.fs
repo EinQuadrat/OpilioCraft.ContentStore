@@ -46,16 +46,16 @@ let private transformExifToItemDetails (exif : ExifToolResult) =
         | JsonValue.String x -> // we use the nameAsHint to identify DateTime tags more reliable
             match x with
             | IsDateTime x when nameAsHint.Contains("Date") -> ItemDetail.DateTime x
-            | _ -> ItemDetail.String x
+            | stringValue -> stringValue.Trim() |> ItemDetail.String
     
         // container items are flattened to a string
         | JsonValue.Array x ->
-            seq { for item in jsonValue -> item.AsString() }
+            seq { for item in jsonValue -> item.AsString().Trim() }
             |> String.concat ", "
             |> fun flattenedArray -> ItemDetail.String $"#ARRAY# [ {flattenedArray} ]"
         
         | JsonValue.Record x ->
-            seq { for (prop, item) in jsonValue.Properties() -> $"{prop} = {item.AsString()}" }
+            seq { for (prop, item) in jsonValue.Properties() -> $"{prop} = {item.AsString().Trim()}" }
             |> String.concat ", "
             |> fun flattenedRecord -> ItemDetail.String $"#RECORD# {{ {flattenedRecord} }}"
     
@@ -64,8 +64,14 @@ let private transformExifToItemDetails (exif : ExifToolResult) =
 
     exif.ParsedJson.Properties()
     |> Array.fold ( fun map (name, value) -> (transformJsonValue name value, map) ||> Map.add name ) Map.empty
-    
-let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategory) (heuristic : Heuristic) : ItemDetails =
+
+let tryGetValue key (itemDetails : ItemDetails) =
+    itemDetails.TryGetValue(key)
+    |> function
+        | true, v    -> Some v
+        | false, _   -> None
+
+let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategory) (rulesProvider : RulesProvider) : ItemDetails =
     let result = new ItemDetails()
 
     match contentCategory with
@@ -77,14 +83,19 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
 
             exif
             |> ExifToolHelper.tryExtractCamera
+            |> Option.orElse (result |> rulesProvider.TryApplyRule "GuessCamera")
             |> Option.map ItemDetail.String
-            |> Option.orElse (result |> heuristic "camera")
             |> Option.iter ( fun camera -> result.Add(Slot.Camera, camera) )
 
             exif.["EXIF:DateTimeOriginal"]
             |> Option.orElse exif.["File:FileModifyDate"]
             |> Option.bind ExifToolHelper.tryAsDateTime
             |> Option.iter ( fun dateTaken -> result.Add(Slot.DateTaken, dateTaken |> ItemDetail.DateTime) )
+
+            result
+            |> rulesProvider.TryApplyRule "GuessOwner"
+            |> Option.map ItemDetail.String
+            |> Option.iter ( fun owner -> result.Add(Slot.Owner, owner))
 
         | _ -> ignore ()
 
@@ -96,9 +107,8 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
 
             exif
             |> ExifToolHelper.tryExtractCamera
+            |> Option.orElse (result |> rulesProvider.TryApplyRule "GuessCamera")
             |> Option.map ItemDetail.String
-            |> Option.orElse (result |> heuristic "camera")
-            |> Option.orElse (ItemDetail.String "NA" |> Some)
             |> Option.iter ( fun camera -> result.Add(Slot.Camera, camera) )
 
             exif.["EXIF:DateTimeOriginal"]
@@ -108,8 +118,14 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
             |> Option.bind ExifToolHelper.tryAsDateTime
             |> Option.iter ( fun dateTime -> result.Add(Slot.DateTaken, dateTime |> ItemDetail.DateTime) )
 
+            result
+            |> rulesProvider.TryApplyRule "GuessOwner"
+            |> Option.map ItemDetail.String
+            |> Option.iter ( fun owner -> result.Add(Slot.Owner, owner))
+
         | _ -> ignore ()
 
     | _ -> ignore ()
 
     result
+
