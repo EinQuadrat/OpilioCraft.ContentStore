@@ -17,7 +17,7 @@ module internal UserSettings =
     let private loadFrameworkConfig = UserSettingsHelper.lazyLoad<FrameworkConfig> Settings.FrameworkConfigFilename frameworkConfigJsonOptions
     let frameworkConfig () = loadFrameworkConfig.Value
 
-    let private verifyRuleFile ruleName ruleDefinitionFile =
+    let private assertRuleFileExists ruleName ruleDefinitionFile =
         if not <| File.Exists ruleDefinitionFile
         then
             raise <| InvalidUserSettingsException(Settings.FrameworkConfigFilename, $"definition file of rule {ruleName} does not exist")
@@ -27,7 +27,7 @@ module internal UserSettings =
         |> Verify.isVersion Settings.FrameworkVersion
 
         |> UserSettingsHelper.tryGetProperty "Rules"
-        |> Option.iter (Map.iter verifyRuleFile)
+        |> Option.iter (Map.iter assertRuleFileExists)
 
     // accessors
     let RepositoryPath name =

@@ -254,7 +254,6 @@ and DetailsConverter() =
     [<Literal>] static let TimeSpanOffset = 11 // length of prefix + 1 for trailing whitespace
     [<Literal>] static let FloatPrefix = "#Float#"
     [<Literal>] static let FloatOffset = 8 // length of prefix + 1 for trailing whitespace
-    
 
     override _.Read (reader: byref<Utf8JsonReader>, _: Type, _: JsonSerializerOptions) =
         match reader.TokenType with

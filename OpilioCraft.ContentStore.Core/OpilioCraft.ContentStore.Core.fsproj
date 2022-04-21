@@ -12,7 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Constants.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="UserSettings.fs" />

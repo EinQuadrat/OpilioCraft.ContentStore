@@ -1,9 +1,7 @@
 ﻿namespace OpilioCraft.ContentStore.Core
 
 open System
-open System.IO
 open System.Text.Json
-
 open OpilioCraft.FSharp.Prelude
 
 exception RepositoryNotFoundException of Root : string
@@ -37,7 +35,7 @@ type ContentStoreManager private ( frameworkConfig : FrameworkConfig ) =
         let pathToRepository = UserSettings.RepositoryPath repositoryName
             // will throw UnknownRepository on a given name not mentioned in configuration file
 
-        if not <| Directory.Exists pathToRepository
+        if not <| IO.Directory.Exists pathToRepository
         then
             raise <| RepositoryNotFoundException pathToRepository
 

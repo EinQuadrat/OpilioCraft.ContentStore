@@ -2,6 +2,9 @@
 
 open System.IO
 open FSharp.Data
+
+open FParsec
+
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
@@ -128,4 +131,6 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
     | _ -> ignore ()
 
     result
+
+// ------------------------------------------------------------------------------------------------
 

@@ -115,8 +115,3 @@ type RepositoryItem = // data structure used by Repository
 
     [<JsonIgnore>]
     member x.AsOfLocal = x.AsOf.ToLocalTime()
-
-// ----------------------------------------------------------------------------
-
-type Rule = ItemDetails -> string option
-type RuleSet = string -> Rule
