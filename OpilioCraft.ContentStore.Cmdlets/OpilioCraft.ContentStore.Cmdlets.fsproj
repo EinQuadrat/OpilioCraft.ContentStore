@@ -17,6 +17,7 @@
     <Compile Include="CommandBase.fs" />
     <Compile Include="ContentStoreCommand.fs" />
     <Compile Include="RepositoryCommand.fs" />
+    <Compile Include="StringTemplateHelper.fs" />
     <Compile Include="InitializeContentStoreFramework.fs" />
     <Compile Include="GetFingerprint.fs" />
     <Compile Include="AddFingerprint.fs" />
@@ -26,7 +27,7 @@
     <Compile Include="UnregisterItem.fs" />
     <Compile Include="GetItemStatus.fs" />
     <Compile Include="GetItemData.fs" />
-    <Compile Include="GetItemFile.fs" />
+    <Compile Include="ExportItemFile.fs" />
     <Compile Include="GetItemDetails.fs" />
     <Compile Include="GetItemDetail.fs" />
     <Compile Include="SetItemDetail.fs" />
@@ -40,10 +41,11 @@
     <Compile Include="GetOwner.fs" />
     <Compile Include="SetDateTaken.fs" />
     <Compile Include="SelectItems.fs" />
-    <Compile Include="ExportItems.fs" />
+    <Compile Include="RenameManagedFile.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="OpilioCraft.StringTemplate" Version="1.0.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
   </ItemGroup>
 

@@ -13,25 +13,24 @@ type public SelectItemsCommand () =
 
     // helpers
     let applyFilter (runtime : LispRuntime) (filter : Expression) item =
-        runtime.EvalWithContextAndResult item filter
+        runtime.InjectObjectData(item).EvalWithResult filter
         |> function
             | Ok (Atom (FlexibleValue.Boolean true)) -> true
             | _ -> false
 
     // cmdlet params
     [<Parameter(Position=0)>]
-    member val Filter = "T" with get, set // Lisp-like condition
+    member val Filter = "T" with get, set // LISP-like condition
 
+    // private params
     member val private LispRuntime = LispRuntime.Initialize().InjectResultHook(ItemDetailHelper.unwrapItemDetail)
 
     // cmdlet funtionality
     override x.EndProcessing() =
-        base.EndProcessing()
-
         try
             let compiledFilter =
                 x.LispRuntime.TryParse x.Filter
-                |> Option.defaultWith (fun _ -> failwith "invalid filter")
+                |> Option.defaultWith (fun _ -> raise <| InvalidLispExpressionException "invalid filter expression")
 
             x.ActiveRepository.GetItemIds ()
             |> Seq.map x.ActiveRepository.GetItem
@@ -40,3 +39,5 @@ type public SelectItemsCommand () =
             |> Seq.iter x.WriteObject
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
+
+        base.EndProcessing()

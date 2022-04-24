@@ -173,22 +173,22 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
         let item = id |> x.GetItem in
         (id, item.ContentType.FileExtension) ||> contentFile |> File.Exists
 
-    member private x.StoreFile id (fileInfo : FileInfo) =
+    member private x.ImportFile id (fileInfo : FileInfo) =
         let dataFile = (id, fileInfo.Extension) ||> contentFile
 
         try
-            File.Copy(fileInfo.FullName, dataFile, false) // prevent accidential overwrite of existing files
+            File.Copy(fileInfo.FullName, dataFile, false) // prevent accidentially overwrite of existing files
         with
-            | exn -> failwith $"[{nameof Repository}] cannot store file for id {id}: {exn.Message}"
+            | exn -> failwith $"[{nameof Repository}] cannot import file for id {id}: {exn.Message}"
 
-    member x.CloneFile id destFile =
+    member x.ExportFile id targetPath overwrite =
         let item = id |> x.GetItem
         let reposFile = (id, item.ContentType.FileExtension) ||> contentFile
 
         try
-            File.Copy(reposFile, destFile)
+            File.Copy(reposFile, targetPath, overwrite)
         with
-            | exn -> failwith $"[{nameof Repository}] cannot clone file for id {id}: {exn.Message}"
+            | exn -> failwith $"[{nameof Repository}] cannot export file for id {id}: {exn.Message}"
 
     // forget data
     member x.Forget (id : ItemId) : unit =
@@ -224,7 +224,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
             // TODO: enrich metadata e.g. by owner
             |> x.StoreItem
             
-            fident.FileInfo |> x.StoreFile itemId
+            fident.FileInfo |> x.ImportFile itemId
 
         itemId // facilitate chaining
 
