@@ -12,12 +12,9 @@ let getDateTaken (reposItem : RepositoryItem) (args : string list) : string =
     let format =
         match args with
         | format :: _ -> format
-        | _ -> "yyyyMMdd"
+        | _ -> "yyyyMMddThhmmss"
 
-    reposItem
-    |> tryGetDetail "DateTaken"
-    |> Option.bind (function | ItemDetail.DateTime datetime -> datetime.ToString(format) |> Some | _ -> None)
-    |> Option.defaultValue ""
+    reposItem.AsOf.ToString(format)
 
 let getOwner (reposItem : RepositoryItem) _ : string =
     reposItem

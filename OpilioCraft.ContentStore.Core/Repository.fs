@@ -214,16 +214,22 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
                 |> Option.map (fun category -> { Category = category; FileExtension = fident.FileInfo.Extension })
                 |> Option.defaultValue (fident.FileInfo |> getContentType)
 
-            {
-                Id = itemId
-                AsOf = fident.AsOf
-                ContentType = contentType
-                Relations = List.empty<Relation>
-                Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category rulesProvider
-            }
-            // TODO: enrich metadata e.g. by owner
-            |> x.StoreItem
-            
+            let mutable item =
+                {
+                    Id = itemId
+                    AsOf = fident.AsOf
+                    ContentType = contentType
+                    Relations = List.empty<Relation>
+                    Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category rulesProvider
+                }
+
+            // reset AsOf to DateTaken if newer
+            if item.Details.ContainsKey(Slot.DateTaken)
+            then
+                let dateTaken = item.Details.[Slot.DateTaken].AsDateTime.ToUniversalTime()
+                item <- { item with AsOf = dateTaken }
+
+            item |> x.StoreItem
             fident.FileInfo |> x.ImportFile itemId
 
         itemId // facilitate chaining

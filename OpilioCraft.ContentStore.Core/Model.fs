@@ -84,6 +84,21 @@ type ItemDetail =
         | TimeSpan plainValue -> plainValue :> obj
         | String plainValue -> plainValue :> obj
 
+    member x.AsBoolean : bool =
+        match x with
+        | Boolean value -> value
+        | _ -> failwith $"cannot cast {x.GetType().FullName} to System.Boolean"
+
+    member x.AsDateTime : System.DateTime =
+        match x with
+        | DateTime value -> value
+        | _ -> failwith $"cannot cast {x.GetType().FullName} to System.DateTime"
+
+    member x.AsString : string =
+        match x with
+        | String value -> value
+        | _ -> failwith $"cannot cast {x.GetType().FullName} to System.String"
+
     static member ofFlexibleValue fval =
         match fval with
         | FlexibleValue.Boolean x  -> Boolean x

@@ -68,9 +68,10 @@ type public RenameManagedFileCommand () =
 
                     if x.ResetFileDate.IsPresent
                     then
-                        IO.File.SetCreationTimeUtc(targetPath, item.AsOf)
-                        IO.File.SetLastWriteTimeUtc(targetPath, item.AsOf)
-                        IO.File.SetLastAccessTimeUtc(targetPath, item.AsOf)
+                        let dateTaken = item.Details.["DateTaken"] |> function | ItemDetail.DateTime dateTime -> dateTime | _ -> failwith "expected data type" 
+                        IO.File.SetCreationTimeUtc(targetPath, dateTaken)
+                        IO.File.SetLastWriteTimeUtc(targetPath, dateTaken)
+                        IO.File.SetLastAccessTimeUtc(targetPath, dateTaken)
                 )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
