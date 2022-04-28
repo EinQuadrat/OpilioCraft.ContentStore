@@ -13,8 +13,8 @@ type public GetRelationsCommand () =
         base.ProcessRecord ()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Get-Relation"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.map x.ActiveRepository.GetRelations
             |> Option.iter x.WriteObject
         with

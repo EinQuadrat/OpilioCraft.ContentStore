@@ -13,8 +13,8 @@ type public ClearRelationsCommand () =
         base.ProcessRecord ()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Clear-Relations"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.iter x.ActiveRepository.ForgetRelations
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

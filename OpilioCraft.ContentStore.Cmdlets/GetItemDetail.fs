@@ -22,13 +22,13 @@ type public GetItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Get-ItemDetail"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetItem
 
-            |> Option.iter
-                ( fun item ->
+            |> Option.iter (
+                fun item ->
                     if item.Details.ContainsKey(x.Name)
                     then
                         item.Details.Item(x.Name).ToString()

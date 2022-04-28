@@ -21,12 +21,12 @@ type public RemoveRelationCommand () =
 
         try
             let fromId =
-                x.TryDetermineItemId ()
-                |> x.AssertIsManagedItem "Remove-Relation"
+                x.RetrieveItemId()
+                |> x.AssertIsManagedItem
                 |> Option.get
 
             let toId =
-                if x.Target |> x.LooksLikeAnItemId
+                if x.Target |> x.IsValidItemId
                 then
                     x.Target
                 else
@@ -43,7 +43,7 @@ type public RemoveRelationCommand () =
                                 | _ -> Fingerprint.fingerprintAsString absolutePath
 
                     |> Some
-                    |> x.AssertIsManagedItem "Remove-Relation"
+                    |> x.AssertIsManagedItem
                     |> Option.get
 
             // remove relation
@@ -53,7 +53,7 @@ type public RemoveRelationCommand () =
             else
                 x.RelationType
                 |> Utils.tryParseRelationType
-                |> x.WarningIfNone $"invalid relation type: {x.RelationType}"
+                |> x.WarnIfNone $"invalid relation type: {x.RelationType}"
                 |> Option.iter ( fun relType -> x.ActiveRepository.ForgetRelationTo fromId { Target = toId; IsA = relType } )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

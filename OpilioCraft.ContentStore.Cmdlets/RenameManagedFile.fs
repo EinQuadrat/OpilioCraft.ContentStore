@@ -37,7 +37,7 @@ type public RenameManagedFileCommand () =
         base.ProcessRecord()
 
         try
-            x.AssertPathProvided "Rename-ManagedFile"
+            x.AssertPathProvided()
             x.Path <- x.ToAbsolutePath x.Path
 
             x.Path
@@ -45,7 +45,7 @@ type public RenameManagedFileCommand () =
             |> Fingerprint.fingerprintAsString
 
             |> Some
-            |> x.AssertIsManagedItem "Rename-ManagedFile"
+            |> x.AssertIsManagedItem
             |> Option.get
 
             |> fun id ->

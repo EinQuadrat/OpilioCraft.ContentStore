@@ -11,11 +11,11 @@ open OpilioCraft.FSharp.Prelude
 type public RepositoryCommandBase () as this =
     inherit ContentStoreCommand ()
 
+    // used to identify a possible item id
     let itemIdRegex = Regex(@"^([0-9a-z]{64})$", RegexOptions.Compiled)
-    let looksLikeAnItemId input = itemIdRegex.IsMatch input
+    let isValidItemId = itemIdRegex.IsMatch
 
-    let mutable itemId = String.Empty
-
+    // repository settings
     [<DefaultValue>] val mutable private RepositoryInstance : Lazy<Repository>
     member _.ActiveRepository = this.RepositoryInstance.Value
 
@@ -36,57 +36,47 @@ type public RepositoryCommandBase () as this =
     // fingerprint requirements
     member val ForceFullFingerprint = SwitchParameter(false) with get,set
 
-    // helpers
-    member _.LooksLikeAnItemId = looksLikeAnItemId
+    // check given input
+    member _.IsValidItemId = isValidItemId
 
-    member x.IdentifierLooksLikeAnItemId =
+    member x.TryInputAsId () =
         match x.ParameterSetName with
-        | "ByItemId" -> true
-        | "ByIdentifier" -> looksLikeAnItemId x.Identifier
-        | _ -> false
-        
-    member x.TryIdentifierAsPath () =
+        | "ByItemId" -> Some x.Id
+        | "ByIdentifier" -> Some x.Identifier |> Option.filter isValidItemId
+        | _ -> None
+
+    member x.GotId = x.TryInputAsId >> Option.isSome
+
+    member x.TryInputAsPath () =
         match x.ParameterSetName with
-        | "ByIdentifier" -> Some x.Identifier
+        | "ByIdentifier" -> Some x.Identifier |> Option.filter (not << isValidItemId)
         | "ByPath" -> Some x.Path
         | _ -> None
         |> Option.map x.ToAbsolutePath
-        |> Option.filterOrElseWith IO.File.Exists (fun _ -> x.WriteWarning "given file does not exist or is not accessible")
 
-    member x.TryDetermineItemId () : ItemId option =
-        match x.ParameterSetName with
-        | "ByItemId" -> Some x.Id
-        | _ ->
-            if x.IdentifierLooksLikeAnItemId
-            then
-                Some x.Identifier
-            else
-                x.TryIdentifierAsPath ()
-                |> Option.map (
-                    fun absolutePath ->
-                        absolutePath
-                        |> Fingerprint.getFingerprint 
-                        |> function
-                            | Derived fingerprint when x.ForceFullFingerprint.ToBool() = false -> fingerprint
-                            | Full fingerprint -> fingerprint
-                            | _ -> Fingerprint.fingerprintAsString absolutePath
-                    )
+    member x.GotPath = x.TryInputAsPath >> Option.isSome
 
-    member x.AssertItemIdProvided cmdletName =
-        match x.ParameterSetName with
-        | "ByItemId" -> ()
-        | "ByIdentifier" when x.IdentifierLooksLikeAnItemId -> ()
-        | _ -> failwith $"{cmdletName}: expected an item id as first parameter"
+    // map input to item id
+    member x.IdFromPath absolutePath =
+        absolutePath
+        |> Fingerprint.getFingerprint 
+        |> function
+            | Derived fingerprint when x.ForceFullFingerprint.ToBool() = false -> fingerprint
+            | Full fingerprint -> fingerprint
+            | _ -> Fingerprint.fingerprintAsString absolutePath
         
-    member x.AssertPathProvided cmdletName =
-        match x.ParameterSetName with
-        | "ByPath" -> ()
-        | "ByIdentifier" when x.IdentifierLooksLikeAnItemId = false -> ()
-        | _ -> failwith $"{cmdletName}: expected a path as first parameter"
+    member x.RetrieveItemId () =
+        x.TryInputAsId() |> Option.orElse ( x.TryInputAsPath () |> Option.map x.IdFromPath )
+
+    member x.AssertIdProvided () =
+        x.TryInputAsId() |> Option.orElseWith (fun _ -> failwith $"expected an id as first parameter") |> ignore
         
-    member x.AssertIsManagedItem cmdletName maybeItem =
+    member x.AssertPathProvided () =
+        x.TryInputAsPath() |> Option.orElseWith (fun _ -> failwith $"expected a path as first parameter") |> ignore
+        
+    member x.AssertIsManagedItem maybeItem =
         maybeItem
-        |> Option.ifNone (fun _ -> failwith $"{cmdletName}: cannot derive item id from given input")
+        |> Option.ifNone (fun _ -> failwith $"cannot derive item id from given input")
         |> Option.filterOrElseWith
             x.ActiveRepository.IsManagedId
             (fun itemId -> failwith $"provided item with id {itemId} is unknown to specified repository")

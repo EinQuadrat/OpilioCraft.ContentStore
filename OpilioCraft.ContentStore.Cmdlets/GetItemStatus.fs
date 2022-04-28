@@ -14,24 +14,27 @@ type public GetItemStatusCommand () =
         base.ProcessRecord()
 
         try
-            if x.IdentifierLooksLikeAnItemId
-            then
-                {
-                    Id = x.Identifier
-                    IsManaged = x.Identifier |> x.ActiveRepository.IsManagedId
-                }
-                |> x.WriteObject
-            else
-                x.TryIdentifierAsPath ()
-                |> Option.map
-                    ( fun path ->
+            x.TryInputAsId()
+            |> Option.map (
+                fun itemId ->
+                    {
+                        Id = itemId
+                        IsManaged = itemId |> x.ActiveRepository.IsManagedId
+                    } |> x.WriteObject
+                )
+            |> Option.orElse (
+                x.TryInputAsPath()
+                |> Option.map (
+                    fun path ->
                         let fident = path |> FileInfo |> Utils.identifyFile in
                         {
                             Path = fident.FileInfo.FullName
                             IsManaged = fident.Fingerprint |> x.ActiveRepository.IsManagedId
-                        }
+                        } |> x.WriteObject
                     )
-                |> Option.iter x.WriteObject
+                )
+            |> ignore
+
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 

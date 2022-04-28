@@ -21,12 +21,12 @@ type public SetRelationCommand () =
 
         try
             let fromId =
-                x.TryDetermineItemId ()
-                |> x.AssertIsManagedItem "Set-Relation"
+                x.RetrieveItemId()
+                |> x.AssertIsManagedItem
                 |> Option.get
 
             let toId =
-                if x.Target |> x.LooksLikeAnItemId
+                if x.Target |> x.IsValidItemId
                 then
                     x.Target
                 else
@@ -43,7 +43,7 @@ type public SetRelationCommand () =
                                 | _ -> Fingerprint.fingerprintAsString absolutePath
 
                     |> Some
-                    |> x.AssertIsManagedItem "Set-Relation"
+                    |> x.AssertIsManagedItem
                     |> Option.get
 
             let relType =

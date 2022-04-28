@@ -14,8 +14,8 @@ type public GetOwnerCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Get-Owner"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetItem
             |> Option.bind (x.ContentStoreManager.RulesProvider.TryApplyRule "GuessOwner")

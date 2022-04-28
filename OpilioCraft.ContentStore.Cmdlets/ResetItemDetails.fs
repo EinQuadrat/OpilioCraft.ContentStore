@@ -19,8 +19,8 @@ type public ResetItemDetailsCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Reset-ItemDetails"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.get
 
             |> fun id ->

@@ -14,8 +14,8 @@ type public UnregisterItemCommand () =
         base.ProcessRecord ()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Unregister-Item"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.iter x.ActiveRepository.Forget
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

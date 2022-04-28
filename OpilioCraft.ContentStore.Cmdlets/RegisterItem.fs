@@ -24,9 +24,9 @@ type public RegisterItemCommand () =
         base.ProcessRecord ()
 
         try
-            x.AssertPathProvided "Register-Item"
+            x.AssertPathProvided()
 
-            x.TryIdentifierAsPath ()
+            x.TryInputAsPath()
             |> Option.map ( fun path -> path |> IO.FileInfo |> Utils.identifyFile )
             |> Option.bind (
                 fun fident ->
@@ -36,7 +36,7 @@ type public RegisterItemCommand () =
                     else
                         x.ContentCategory
                         |> Utils.tryParseContentCategory
-                        |> x.WarningIfNone $"invalid content category: {x.ContentCategory}"
+                        |> x.WarnIfNone $"invalid content category: {x.ContentCategory}"
                         |> Option.map ( fun category -> x.ActiveRepository.AddToRepository(fident, category) )
 
                     |> Option.map ( fun itemId -> { Path = fident.FileInfo.FullName; Id = itemId } )

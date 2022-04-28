@@ -14,8 +14,8 @@ type public GetItemDataCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Get-ItemData"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.map x.ActiveRepository.GetItem
             |> Option.iter x.WriteObject
         with

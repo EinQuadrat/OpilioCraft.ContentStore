@@ -46,8 +46,8 @@ type public InvokeItemRuleCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Invoke-ItemRule"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetItem
 

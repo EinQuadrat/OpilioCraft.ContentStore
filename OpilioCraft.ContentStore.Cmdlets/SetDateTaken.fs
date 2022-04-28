@@ -42,8 +42,8 @@ type public SetDateTakenCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Set-DateTaken"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.get
 
             |> x.ActiveRepository.GetItem

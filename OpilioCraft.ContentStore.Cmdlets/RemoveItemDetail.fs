@@ -33,8 +33,8 @@ type public RemoveItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId()
-            |> x.AssertIsManagedItem "Remove-ItemDetail"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.iter ( fun id -> x.ActiveRepository.UnsetDetail id x.Name )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

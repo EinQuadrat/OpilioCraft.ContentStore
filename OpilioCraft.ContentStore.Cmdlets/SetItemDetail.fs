@@ -39,14 +39,14 @@ type public SetItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Set-ItemDetail"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetItem
 
             // automatic type conversion
-            |> Option.map
-                ( fun item ->
+            |> Option.map (
+                fun item ->
                     item,
                     match x.Value with
                     | v when x.AsString.IsPresent -> ItemDetail.String v    // ignore value type if requested

@@ -19,13 +19,13 @@ type public GetItemDetailsCommand () =
         base.ProcessRecord()
 
         try
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Get-ItemDetails"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetDetails
 
-            |> Option.iter
-                ( fun itemDetails ->
+            |> Option.iter (
+                fun itemDetails ->
                     let result = new ItemDetails()
                     let regex = Regex(x.Select, RegexOptions.Compiled)
 

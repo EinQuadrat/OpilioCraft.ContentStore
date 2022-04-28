@@ -39,10 +39,10 @@ type public ExportItemFileCommand () =
         base.ProcessRecord()
 
         try
-            x.AssertItemIdProvided "Export-ItemFile"
+            x.AssertIdProvided()
 
-            x.TryDetermineItemId ()
-            |> x.AssertIsManagedItem "Export-ItemFile"
+            x.RetrieveItemId()
+            |> x.AssertIsManagedItem
             |> Option.iter (
                 fun id ->
                     let item = x.ActiveRepository.GetItem id

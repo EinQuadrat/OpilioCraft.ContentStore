@@ -3,6 +3,7 @@
 open System.IO
 open System.Management.Automation
 open System.Runtime.CompilerServices
+
 open OpilioCraft.FSharp.Prelude
 
 // simplify exception handling
@@ -11,19 +12,7 @@ type ExceptionExtension =
     [<Extension>]
     static member ToError(exn, errorCategory, targetObject) = ErrorRecord(exn, null, errorCategory, targetObject)
 
-// simplify conditions
-[<RequireQualifiedAccess>]
-module Ensure =
-    let test condition input =
-        if condition input
-        then
-            Result.Ok input
-        else
-            Result.Error input
-
-    let fileExists path = File.Exists path
-
-// base class for all content store framework related commands
+// base class for all cmdlets, providing some helper functionality
 [<AbstractClass>]
 type public CommandBase () =
     inherit PSCmdlet ()
@@ -35,7 +24,7 @@ type public CommandBase () =
         else
             Path.Combine(x.SessionState.Path.CurrentFileSystemLocation.ToString(), path)
 
-    member inline x.WarningIfNone warning maybe =
+    member inline x.WarnIfNone warning maybe =
         maybe |> Option.ifNone ( fun _ -> x.WriteWarning warning )
 
     member inline x.WarnIfFalse warning input =
@@ -43,7 +32,7 @@ type public CommandBase () =
         input
 
     member _.AssertFileExists errorMessage path =
-        let testResult = path |> Ensure.fileExists in
+        let testResult = path |> File.Exists in
         if not testResult then failwith $"{errorMessage}: {path}"
         path
 
@@ -60,7 +49,3 @@ type public CommandBase () =
         errorMessage
         |> ParameterBindingException
         |> x.ThrowAsTerminatingError errorCategory
-
-    // basic functionality provided for all content store framework commands
-    override x.EndProcessing () =
-        base.EndProcessing ()
