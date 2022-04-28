@@ -16,7 +16,7 @@ module internal Settings =
     let RulesLocation = Path.Combine(AppDataLocation, "rules")
 
     // configuration files
-    let FrameworkConfigFilename = Path.Combine(AppDataLocation, "config.json")
+    let FrameworkConfigFile = Path.Combine(AppDataLocation, "config.json")
 
 // ------------------------------------------------------------------------------------------------
 

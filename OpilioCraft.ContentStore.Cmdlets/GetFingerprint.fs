@@ -24,20 +24,17 @@ type public GetFingerprintCommand () =
         try
             x.Path
             |> x.ToAbsolutePath
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map
-                ( fun path ->
-                    path,
-                    path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
-                )
-            |> Option.iter
-                ( fun (path, qfp) ->
-                    if x.Plain.IsPresent
-                    then
-                        { Path = path; PlainFingerprint.Fingerprint = qfp.Value } |> x.WriteObject
-                    else
-                        { Path = path; TypedFingerprint.Fingerprint = qfp } |> x.WriteObject
-                )
+            |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
+
+            |> fun path -> 
+                path, path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
+            
+            |> fun (path, qfp) ->
+                if x.Plain.IsPresent
+                then
+                    { Path = path; PlainFingerprint.Fingerprint = qfp.Value } |> x.WriteObject
+                else
+                    { Path = path; TypedFingerprint.Fingerprint = qfp } |> x.WriteObject
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 

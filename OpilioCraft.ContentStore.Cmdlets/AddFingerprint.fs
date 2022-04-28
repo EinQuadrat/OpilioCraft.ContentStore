@@ -27,9 +27,12 @@ type public AddFingerprintCommand () =
         try
             x.Path
             |> x.ToAbsolutePath
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map ( fun path -> path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint )
-            |> Option.map ( fun fp -> x.InputObject.Members.Add(PSNoteProperty("Fingerprint", fp.Value)) )
-            |> Option.iter ( fun _ -> if x.PassThru.IsPresent then x.InputObject |> x.WriteObject )
+            |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
+            |> fun path -> path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
+            |> fun fp -> x.InputObject.Members.Add(PSNoteProperty("Fingerprint", fp.Value))
+            
+            if x.PassThru.IsPresent
+            then
+                 x.WriteObject x.InputObject
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

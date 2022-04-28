@@ -5,19 +5,12 @@ open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Get, "ItemDetail", DefaultParameterSetName = "ByPath")>]
+[<Cmdlet(VerbsCommon.Get, "ItemDetail", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<obj>)>]
 type public GetItemDetailCommand () =
     inherit RepositoryCommandBase ()
 
     // cmdlet params
-    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
     [<Parameter(Position=1, Mandatory=true)>]
     member val Name = String.Empty with get, set
 
@@ -29,26 +22,20 @@ type public GetItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            if x.Id |> String.IsNullOrEmpty // parameter set ByPath?
-            then
-                x.Path
-                |> x.ToAbsolutePath
-                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                |> Option.map Fingerprint.fingerprintAsString
-            else
-                x.Id
-                |> Some
-
-            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
+            x.TryDetermineItemId ()
+            |> x.AssertIsManagedItem "Get-ItemDetail"
 
             |> Option.map x.ActiveRepository.GetItem
+
             |> Option.iter
                 ( fun item ->
                     if item.Details.ContainsKey(x.Name)
                     then
-                        item.Details.Item(x.Name) |> x.WriteObject
+                        item.Details.Item(x.Name).ToString()
                     else
-                        x.DefaultValue |> x.WriteObject
+                        x.DefaultValue
+                    
+                    |> x.WriteObject
                 )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

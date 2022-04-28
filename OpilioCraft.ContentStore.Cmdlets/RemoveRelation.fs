@@ -5,24 +5,15 @@ open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Remove, "Relation", DefaultParameterSetName = "ByPath")>]
+[<Cmdlet(VerbsCommon.Remove, "Relation", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RemoveRelationCommand () =
     inherit RepositoryCommandBase ()
 
-    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true)>]
-    member val Path = String.Empty with get, set
+    [<Parameter(Mandatory=true)>]
+    member val Target = String.Empty with get, set
 
-    [<Parameter(ParameterSetName="ByPath", Position=1, Mandatory=true)>]
-    member val TargetPath = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=1, Mandatory=true)>]
-    member val TargetId = String.Empty with get, set
-
-    [<Parameter(Position=2)>]
+    [<Parameter>]
     member val RelationType = String.Empty with get, set
     
     override x.ProcessRecord () =
@@ -30,38 +21,39 @@ type public RemoveRelationCommand () =
 
         try
             let fromId =
-                if x.Id |> String.IsNullOrEmpty // check for default parameter set
-                then
-                    x.Path
-                    |> x.ToAbsolutePath
-                    |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                    |> Option.map Fingerprint.fingerprintAsString
-                else
-                    x.Id
-                    |> Some
-                |> x.Assert x.ActiveRepository.IsManagedId $"given origin id is unknown: {x.Id}"
+                x.TryDetermineItemId ()
+                |> x.AssertIsManagedItem "Remove-Relation"
+                |> Option.get
 
             let toId =
-                if x.TargetId |> String.IsNullOrEmpty // check for default parameter set
+                if x.Target |> x.LooksLikeAnItemId
                 then
-                    x.TargetPath
+                    x.Target
+                else
+                    x.Target
                     |> x.ToAbsolutePath
-                    |> x.TryFileExists $"given file does not exist or is not accessible: {x.TargetPath}"
-                    |> Option.map Fingerprint.fingerprintAsString
-                else
-                    x.TargetId
-                    |> Some
-                |> x.Assert x.ActiveRepository.IsManagedId $"given target id is unknown: {x.TargetId}"
+                    |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Target}"
 
-            if fromId.IsSome && toId.IsSome
+                    |> fun absolutePath ->
+                            absolutePath
+                            |> Fingerprint.getFingerprint 
+                            |> function
+                                | Derived fingerprint when x.ForceFullFingerprint.ToBool() = false -> fingerprint
+                                | Full fingerprint -> fingerprint
+                                | _ -> Fingerprint.fingerprintAsString absolutePath
+
+                    |> Some
+                    |> x.AssertIsManagedItem "Remove-Relation"
+                    |> Option.get
+
+            // remove relation
+            if x.RelationType |> String.IsNullOrEmpty
             then
-                if x.RelationType |> String.IsNullOrEmpty
-                then
-                    x.ActiveRepository.ForgetRelationsTo fromId.Value toId.Value
-                else
-                    x.RelationType
-                    |> Utils.tryParseRelationType
-                    |> x.WarningIfNone $"invalid relation type: {x.RelationType}"
-                    |> Option.iter ( fun relType -> x.ActiveRepository.ForgetRelationTo fromId.Value { Target = toId.Value; IsA = relType } )
+                x.ActiveRepository.ForgetRelationsTo fromId toId
+            else
+                x.RelationType
+                |> Utils.tryParseRelationType
+                |> x.WarningIfNone $"invalid relation type: {x.RelationType}"
+                |> Option.iter ( fun relType -> x.ActiveRepository.ForgetRelationTo fromId { Target = toId; IsA = relType } )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

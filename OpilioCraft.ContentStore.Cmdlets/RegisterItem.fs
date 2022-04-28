@@ -4,14 +4,10 @@ open System
 open System.Management.Automation
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsLifecycle.Register, "Item")>]
+[<Cmdlet(VerbsLifecycle.Register, "Item", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<ItemId>)>]
 type public RegisterItemCommand () =
     inherit RepositoryCommandBase ()
-
-    [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = System.String.Empty with get, set
 
     [<Parameter>]
     member val ContentCategory = String.Empty with get, set
@@ -28,21 +24,22 @@ type public RegisterItemCommand () =
         base.ProcessRecord ()
 
         try
-            x.Path
-            |> x.ToAbsolutePath
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map ( fun path -> path |> IO.FileInfo |> Utils.identifyFile )
-            |> Option.bind ( fun fident ->
-                if x.ContentCategory |> String.IsNullOrEmpty
-                then
-                    x.ActiveRepository.AddToRepository(fident) |> Some
-                else
-                    x.ContentCategory
-                    |> Utils.tryParseContentCategory
-                    |> x.WarningIfNone $"invalid content category: {x.ContentCategory}"
-                    |> Option.map ( fun category -> x.ActiveRepository.AddToRepository(fident, category) )
+            x.AssertPathProvided "Register-Item"
 
-                |> Option.map ( fun itemId -> { Path = fident.FileInfo.FullName; Id = itemId } )
+            x.TryIdentifierAsPath ()
+            |> Option.map ( fun path -> path |> IO.FileInfo |> Utils.identifyFile )
+            |> Option.bind (
+                fun fident ->
+                    if x.ContentCategory |> String.IsNullOrEmpty
+                    then
+                        x.ActiveRepository.AddToRepository(fident) |> Some
+                    else
+                        x.ContentCategory
+                        |> Utils.tryParseContentCategory
+                        |> x.WarningIfNone $"invalid content category: {x.ContentCategory}"
+                        |> Option.map ( fun category -> x.ActiveRepository.AddToRepository(fident, category) )
+
+                    |> Option.map ( fun itemId -> { Path = fident.FileInfo.FullName; Id = itemId } )
                 )
             |> Option.iter x.WriteObject
         with

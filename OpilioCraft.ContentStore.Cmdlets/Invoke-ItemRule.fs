@@ -7,27 +7,16 @@ open OpilioCraft.ContentStore.Core
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.Lisp
 
-[<Cmdlet(VerbsLifecycle.Invoke, "ItemRule")>]
+[<Cmdlet(VerbsLifecycle.Invoke, "ItemRule", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<obj>)>]
 type public InvokeItemRuleCommand () =
     inherit RepositoryCommandBase ()
 
     // cmdlet params
-    [<Parameter(ParameterSetName="ByPath_Predefined", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Parameter(ParameterSetName="ByPath_UserDefined", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById_Predefined", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Parameter(ParameterSetName="ById_UserDefined", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    member val Id = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ByPath_Predefined", Mandatory=true)>]
-    [<Parameter(ParameterSetName="ById_Predefined", Mandatory=true)>]
+    [<Parameter>]
     member val RuleName = String.Empty with get, set // load predefined rule
 
-    [<Parameter(ParameterSetName="ByPath_UserDefined", Mandatory=true)>]
-    [<Parameter(ParameterSetName="ById_UserDefined", Mandatory=true)>]
+    [<Parameter>]
     member val Rule = String.Empty with get, set // LISP expression
 
     // private params
@@ -57,19 +46,11 @@ type public InvokeItemRuleCommand () =
         base.ProcessRecord()
 
         try
-            if x.Id |> String.IsNullOrEmpty // parameter set ByPath?
-            then
-                x.Path
-                |> x.ToAbsolutePath
-                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                |> Option.map Fingerprint.fingerprintAsString
-            else
-                x.Id
-                |> Some
-
-            |> x.Assert x.ActiveRepository.IsManagedId $"no managed item with id {x.Id}"
+            x.TryDetermineItemId ()
+            |> x.AssertIsManagedItem "Invoke-ItemRule"
 
             |> Option.map x.ActiveRepository.GetItem
+
             |> Option.bind (fun item -> x.LispRuntime.InjectObjectData(item).EvalWithResult x.CompiledRule |> Result.toOption)
             |> Option.bind (function | Atom fval -> Some fval | _ -> None)
             |> Option.iter x.WriteObject

@@ -5,7 +5,7 @@ open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Remove, "ItemDetail", DefaultParameterSetName="ByPath")>]
+[<Cmdlet(VerbsCommon.Remove, "ItemDetail", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RemoveItemDetailCommand () =
     inherit RepositoryCommandBase ()
@@ -18,13 +18,6 @@ type public RemoveItemDetailCommand () =
         | _ -> true
 
     // cmdlet params
-    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
     [<Parameter(Position=1, Mandatory=true)>]
     member val Name = String.Empty with get, set
 
@@ -40,18 +33,8 @@ type public RemoveItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            if x.Id |> String.IsNullOrEmpty // parameter set ByPath?
-            then
-                x.Path
-                |> x.ToAbsolutePath
-                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                |> Option.map Fingerprint.fingerprintAsString
-            else
-                x.Id
-                |> Some
-
-            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
-
+            x.TryDetermineItemId()
+            |> x.AssertIsManagedItem "Remove-ItemDetail"
             |> Option.iter ( fun id -> x.ActiveRepository.UnsetDetail id x.Name )
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

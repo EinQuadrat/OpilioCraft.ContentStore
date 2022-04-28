@@ -6,7 +6,7 @@ open OpilioCraft.ContentStore.Core
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.Lisp
 
-[<Cmdlet(VerbsCommon.Select, "Items")>]
+[<Cmdlet(VerbsCommon.Select, "Items", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<ItemId>)>]
 type public SelectItemsCommand () =
     inherit RepositoryCommandBase ()

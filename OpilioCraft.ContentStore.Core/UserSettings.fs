@@ -14,13 +14,13 @@ module internal UserSettings =
             jsonOpts
 
     // load user settings on demand
-    let private loadFrameworkConfig = UserSettingsHelper.lazyLoad<FrameworkConfig> Settings.FrameworkConfigFilename frameworkConfigJsonOptions
+    let private loadFrameworkConfig = UserSettingsHelper.lazyLoad<FrameworkConfig> Settings.FrameworkConfigFile frameworkConfigJsonOptions
     let frameworkConfig () = loadFrameworkConfig.Value
 
     let private assertRuleFileExists ruleName ruleDefinitionFile =
         if not <| File.Exists ruleDefinitionFile
         then
-            raise <| InvalidUserSettingsException(Settings.FrameworkConfigFilename, $"definition file of rule {ruleName} does not exist")
+            raise <| InvalidUserSettingsException(Settings.FrameworkConfigFile, $"definition file of rule {ruleName} does not exist")
 
     let verifyFrameworkConfig () =
         frameworkConfig ()

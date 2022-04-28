@@ -17,20 +17,26 @@ exception RepositoryNotFoundException of Root : string
 type ContentStoreManager private ( frameworkConfig : FrameworkConfig ) =
     inherit DisposableBase ()
 
-    // settings
-    [<Literal>] static let RepositoryConfigFilename = "repository.json"
-    [<Literal>] static let DefaultRepository = "DEFAULT"
-    [<Literal>] static let ResourceExifTool = "ExifTool"
+    // singleton
+    static let mutable Instance : ContentStoreManager option = None
 
     // resource management
+    [<Literal>] static let ResourceExifTool = "ExifTool"
+
     let mutable _isDisposed = false
     let mutable _usedResources : Map<string, DisposeDelegate> = Map.empty
+
+    // repository specific
+    [<Literal>] static let RepositoryConfigFilename = "repository.json"
+    [<Literal>] static let NameOfDefaultRepository = "DEFAULT"
+
+    let mutable _repositories : Map<string, Repository> = Map.empty
 
     // rules management
     member val RulesProvider = RulesProvider frameworkConfig
 
     // repository access
-    member x.LoadRepository(repositoryName : string, ?forcePrefetch : bool) =
+    member private x.LoadRepository(repositoryName : string, ?forcePrefetch : bool) =
         // lookup path to repository
         let pathToRepository = UserSettings.RepositoryPath repositoryName
             // will throw UnknownRepository on a given name not mentioned in configuration file
@@ -53,8 +59,15 @@ type ContentStoreManager private ( frameworkConfig : FrameworkConfig ) =
         // return it
         repos
 
-    member x.LoadDefaultRepository(?forcePrefetch : bool) =
-        x.LoadRepository(DefaultRepository, forcePrefetch |> Option.defaultValue false)
+    member x.GetRepository(name : string, ?reload : bool) =
+        if (not <| Map.containsKey name _repositories) || (reload |> Option.contains true)
+        then
+            _repositories <- _repositories |> Map.add name (x.LoadRepository(name))
+
+        _repositories.[name]
+
+    member x.GetDefaultRepository(?reload : bool) =
+        x.GetRepository(NameOfDefaultRepository, reload |> Option.defaultValue false)
 
     // notify resource use
     member _.UseExifTool () =
@@ -73,18 +86,26 @@ type ContentStoreManager private ( frameworkConfig : FrameworkConfig ) =
 
         base.DisposeManagedResources ()
 
-    // assure valid framework configuration before instantiating ContentStoreManager
-    static member CreateInstance () =
-        try
-            // check framework
+    // is a singleton with reload option
+    static member GetInstance (?reload) =
+        if (reload |> Option.contains true) || Instance.IsNone
+        then
+            // any existing instance to cleanup?
+            if Instance.IsSome
+            then
+                Instance.Value.Dispose()
+                Instance <- None
+
+            // check config
             UserSettings.verifyFrameworkConfig ()
                 // will throw IncompleteSetupException if missing
                 // will throw InvalidUserSettingsException if config file is of wrong format
                 // will throw IncompatibleVersionException if version in config file is not framework version
 
             // create instance
-            new ContentStoreManager (UserSettings.frameworkConfig()) // use new() because of IDisposable
-        with
-            | exn -> Console.WriteLine $"unexpected exception: {exn.Message}"; raise exn
+            Instance <- Some <| new ContentStoreManager (UserSettings.frameworkConfig())
+
+        // return it
+        Instance.Value
         
 and DisposeDelegate = unit -> unit

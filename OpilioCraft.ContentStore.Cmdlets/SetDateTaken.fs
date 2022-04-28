@@ -6,7 +6,7 @@ open OpilioCraft.ContentStore.Core
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.TryWrapper
 
-[<Cmdlet(VerbsCommon.Set, "DateTaken", DefaultParameterSetName="ByPathShift")>]
+[<Cmdlet(VerbsCommon.Set, "DateTaken", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public SetDateTakenCommand () =
     inherit RepositoryCommandBase ()
@@ -31,21 +31,10 @@ type public SetDateTakenCommand () =
         | _ -> Map.empty
 
     // cmdlet params
-    [<Parameter(ParameterSetName="ByPathShift", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Parameter(ParameterSetName="ByPathReset", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ByIdShift", Position=0, Mandatory=true)>]
-    [<Parameter(ParameterSetName="ByIdReset", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ByPathReset")>]
-    [<Parameter(ParameterSetName="ByIdReset")>]
+    [<Parameter>]
     member val Reset = SwitchParameter(false) with get, set
 
-    [<Parameter(ParameterSetName="ByPathShift")>]
-    [<Parameter(ParameterSetName="ByIdShift")>]
+    [<Parameter>]
     member val Shift = TimeSpan.Zero with get, set
 
     // cmdlet funtionality
@@ -53,30 +42,20 @@ type public SetDateTakenCommand () =
         base.ProcessRecord()
 
         try
-            if x.Id |> String.IsNullOrEmpty // parameterset ByPath?
-            then
-                x.Path
-                |> x.ToAbsolutePath
-                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                |> Option.map Fingerprint.fingerprintAsString
-            else
-                x.Id
-                |> Some
+            x.TryDetermineItemId ()
+            |> x.AssertIsManagedItem "Set-DateTaken"
+            |> Option.get
 
-            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
-
-            |> Option.map x.ActiveRepository.GetItem
-            |> Option.iter
-                ( fun item ->
-                    if x.Reset.IsPresent && item.Details.ContainsKey(Slot.DateTakenOriginal)
-                    then
-                        item.Details.[Slot.DateTakenOriginal]
-                        |> x.ActiveRepository.SetDetail item.Id Slot.DateTaken
-                        x.ActiveRepository.UnsetDetails item.Id [ Slot.DateTakenOriginal; Slot.DateTakenOffset ]
-                    else if not x.Reset.IsPresent
-                    then
-                        let modifications = adjustDateTaken item.Details x.Shift in
-                        x.ActiveRepository.SetDetails item.Id modifications
-                )
+            |> x.ActiveRepository.GetItem
+            |> fun item ->
+                if x.Reset.IsPresent && item.Details.ContainsKey(Slot.DateTakenOriginal)
+                then
+                    item.Details.[Slot.DateTakenOriginal]
+                    |> x.ActiveRepository.SetDetail item.Id Slot.DateTaken
+                    x.ActiveRepository.UnsetDetails item.Id [ Slot.DateTakenOriginal; Slot.DateTakenOffset ]
+                else if not x.Reset.IsPresent
+                then
+                    let modifications = adjustDateTaken item.Details x.Shift in
+                    x.ActiveRepository.SetDetails item.Id modifications
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

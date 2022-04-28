@@ -30,14 +30,16 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
     // repository filesystem layout
 
     static let (>+>) basePath part = (basePath, part) |> Path.Combine
+    
     let itemsSection = root >+> config.Layout.Items
     let storageSection = if Path.IsPathRooted(config.Layout.Storage) then config.Layout.Storage else root >+> config.Layout.Storage
 
     let itemFile (id : ItemId) = itemsSection >+> $"{id}.json"
+    let contentFile (id : ItemId) ext = storageSection >+> $"{id}{ext}"
+    
     let itemIdFromFilename (filename : string) = filename.Substring(0, filename.Length - ".json".Length)
     let itemIdFromFileInfo (fi : FileInfo) = fi.Name |> itemIdFromFilename
-    let contentFile (id : ItemId) ext = storageSection >+> $"{id}{ext}"
-
+    
     // ------------------------------------------------------------------------
 
     let cache = new Dictionary<ItemId,RepositoryItem>()
@@ -214,6 +216,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
                 |> Option.map (fun category -> { Category = category; FileExtension = fident.FileInfo.Extension })
                 |> Option.defaultValue (fident.FileInfo |> getContentType)
 
+            // create repository item
             let mutable item =
                 {
                     Id = itemId
@@ -223,12 +226,12 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
                     Details = Utils.getCategorySpecificDetails fident.FileInfo contentType.Category rulesProvider
                 }
 
-            // reset AsOf to DateTaken if newer
-            if item.Details.ContainsKey(Slot.DateTaken)
-            then
-                let dateTaken = item.Details.[Slot.DateTaken].AsDateTime.ToUniversalTime()
-                item <- { item with AsOf = dateTaken }
+            // if present prefer DateTaken over AsOf
+            tryGetValue Slot.DateTaken item.Details
+            |> Option.map (fun dateDetail -> dateDetail.AsDateTime.ToUniversalTime())
+            |> Option.iter (fun dateTaken -> item <- { item with AsOf = dateTaken })
 
+            // store it
             item |> x.StoreItem
             fident.FileInfo |> x.ImportFile itemId
 
@@ -250,16 +253,19 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
         |> x.ReadDetailsFromFile
         |> x.SetDetailsTo id
 
+
+// ------------------------------------------------------------------------------------------------
 // serialization handling
+
 and DetailsConverter() =
     inherit JsonConverter<ItemDetail>()
 
     [<Literal>] static let DateTimePrefix = "#DateTime#"
     [<Literal>] static let DateTimeOffset = 11 // length of prefix + 1 for trailing whitespace
     [<Literal>] static let TimeSpanPrefix = "#TimeSpan#"
-    [<Literal>] static let TimeSpanOffset = 11 // length of prefix + 1 for trailing whitespace
-    [<Literal>] static let FloatPrefix = "#Float#"
-    [<Literal>] static let FloatOffset = 8 // length of prefix + 1 for trailing whitespace
+    [<Literal>] static let TimeSpanOffset = 11
+    [<Literal>] static let FloatPrefix    = "#Float#"
+    [<Literal>] static let FloatOffset    = 8
 
     override _.Read (reader: byref<Utf8JsonReader>, _: Type, _: JsonSerializerOptions) =
         match reader.TokenType with
@@ -284,10 +290,11 @@ and DetailsConverter() =
         
         match value with
         | Boolean x -> writer.WriteBooleanValue x
-        | DateTime x -> writer.WriteStringValue $"{DateTimePrefix} {x.ToString(dateTimeFormat)}"
-        | Float x -> writer.WriteStringValue $"{FloatPrefix} {x.ToString()}" // preserve precision of number value by string wrapper
         | Number x -> writer.WriteNumberValue x
         | String x -> writer.WriteStringValue x
+        // not natively supported value types
+        | DateTime x -> writer.WriteStringValue $"{DateTimePrefix} {x.ToString(dateTimeFormat)}"
+        | Float x -> writer.WriteStringValue $"{FloatPrefix} {x.ToString()}" // preserve precision of number value by string wrapper
         | TimeSpan x -> writer.WriteStringValue $"{TimeSpanPrefix} {x.ToString()}"
         
 and RelationListConverter() =

@@ -6,7 +6,7 @@ open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Rename, "ManagedFile")>]
+[<Cmdlet(VerbsCommon.Rename, "ManagedFile", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RenameManagedFileCommand () =
     inherit RepositoryCommandBase ()
@@ -15,11 +15,7 @@ type public RenameManagedFileCommand () =
     let mutable getFilename : RepositoryItem -> string = fun item -> item.Id + item.ContentType.FileExtension
 
     // cmdlet params
-    [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(Position=1)>]
+    [<Parameter>]
     member val NamePattern = "{date|yyyyMMddThhmmmss}_{seqno}_{owner}#{id}" with get, set
 
     [<Parameter>]
@@ -41,37 +37,39 @@ type public RenameManagedFileCommand () =
         base.ProcessRecord()
 
         try
+            x.AssertPathProvided "Rename-ManagedFile"
             x.Path <- x.ToAbsolutePath x.Path
 
             x.Path
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map Fingerprint.fingerprintAsString
+            |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
+            |> Fingerprint.fingerprintAsString
 
-            |> x.Assert x.ActiveRepository.IsManagedId $"{x.Path} is not a managed file"
+            |> Some
+            |> x.AssertIsManagedItem "Rename-ManagedFile"
+            |> Option.get
 
-            |> Option.iter (
-                fun id ->
-                    let item = x.ActiveRepository.GetItem id
-                    let filename = getFilename item
-                    let targetPath = IO.Path.Combine(Path.GetDirectoryName(x.Path), filename)
+            |> fun id ->
+                let item = x.ActiveRepository.GetItem id
+                let filename = getFilename item
+                let targetPath = IO.Path.Combine(Path.GetDirectoryName(x.Path), filename)
 
-                    if not <| x.Path.Equals(targetPath) // skip unchanged names
+                if not <| x.Path.Equals(targetPath) // skip unchanged names
+                then
+                    if x.WhatIf.IsPresent
                     then
-                        if x.WhatIf.IsPresent
-                        then
-                            System.Console.WriteLine $"rename {x.Path} to {targetPath}"
-                        else
-                            x.WriteVerbose($"renaming {x.Path} to {targetPath}")
-                            IO.File.Move(x.Path, targetPath, false)
+                        System.Console.WriteLine $"rename {x.Path} to {targetPath}"
                     else
-                        x.WriteVerbose($"skipping {x.Path}")
+                        x.WriteVerbose($"renaming {x.Path} to {targetPath}")
+                        IO.File.Move(x.Path, targetPath, false)
+                else
+                    x.WriteVerbose($"skipping {x.Path}")
 
-                    if x.ResetFileDate.IsPresent
-                    then
-                        let dateTaken = item.Details.["DateTaken"] |> function | ItemDetail.DateTime dateTime -> dateTime | _ -> failwith "expected data type" 
-                        IO.File.SetCreationTimeUtc(targetPath, dateTaken)
-                        IO.File.SetLastWriteTimeUtc(targetPath, dateTaken)
-                        IO.File.SetLastAccessTimeUtc(targetPath, dateTaken)
-                )
+                if x.ResetFileDate.IsPresent
+                then
+                    let dateTaken = item.Details.["DateTaken"] |> function | ItemDetail.DateTime dateTime -> dateTime | _ -> failwith "expected data type" 
+                    IO.File.SetCreationTimeUtc(targetPath, dateTaken)
+                    IO.File.SetLastWriteTimeUtc(targetPath, dateTaken)
+                    IO.File.SetLastAccessTimeUtc(targetPath, dateTaken)
+
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

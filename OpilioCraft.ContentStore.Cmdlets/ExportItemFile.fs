@@ -5,7 +5,7 @@ open System.Management.Automation
 
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsData.Export, "ItemFile")>]
+[<Cmdlet(VerbsData.Export, "ItemFile", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public ExportItemFileCommand () =
     inherit RepositoryCommandBase ()
@@ -14,9 +14,6 @@ type public ExportItemFileCommand () =
     let mutable getFilename : RepositoryItem -> string = fun item -> item.Id + item.ContentType.FileExtension
 
     // cmdlet params
-    [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true)>]
-    member val Id = String.Empty with get, set
-
     [<Parameter(Position=1, Mandatory=true)>]
     member val TargetPath = String.Empty with get, set
 
@@ -42,10 +39,10 @@ type public ExportItemFileCommand () =
         base.ProcessRecord()
 
         try
-            x.Id
-            |> Some
-            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
+            x.AssertItemIdProvided "Export-ItemFile"
 
+            x.TryDetermineItemId ()
+            |> x.AssertIsManagedItem "Export-ItemFile"
             |> Option.iter (
                 fun id ->
                     let item = x.ActiveRepository.GetItem id

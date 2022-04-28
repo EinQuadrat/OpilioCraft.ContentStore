@@ -11,6 +11,18 @@ type ExceptionExtension =
     [<Extension>]
     static member ToError(exn, errorCategory, targetObject) = ErrorRecord(exn, null, errorCategory, targetObject)
 
+// simplify conditions
+[<RequireQualifiedAccess>]
+module Ensure =
+    let test condition input =
+        if condition input
+        then
+            Result.Ok input
+        else
+            Result.Error input
+
+    let fileExists path = File.Exists path
+
 // base class for all content store framework related commands
 [<AbstractClass>]
 type public CommandBase () =
@@ -26,11 +38,14 @@ type public CommandBase () =
     member inline x.WarningIfNone warning maybe =
         maybe |> Option.ifNone ( fun _ -> x.WriteWarning warning )
 
-    member inline x.Assert condition failMessage maybe =
-        maybe |> Option.filter condition |> x.WarningIfNone failMessage
+    member inline x.WarnIfFalse warning input =
+        if not input then x.WriteWarning warning
+        input
 
-    member x.TryFileExists errorMessage path =
-        Some path |> x.Assert File.Exists errorMessage
+    member _.AssertFileExists errorMessage path =
+        let testResult = path |> Ensure.fileExists in
+        if not testResult then failwith $"{errorMessage}: {path}"
+        path
 
     // simplify error handling
     member x.WriteAsError errorCategory (exn : #System.Exception) =
@@ -48,5 +63,4 @@ type public CommandBase () =
 
     // basic functionality provided for all content store framework commands
     override x.EndProcessing () =
-        //if x.ContentStoreManager.IsValueCreated then x.ContentStoreManager.Value.Dispose ()
         base.EndProcessing ()

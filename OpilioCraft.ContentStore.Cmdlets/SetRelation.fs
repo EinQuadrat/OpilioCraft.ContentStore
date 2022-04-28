@@ -5,24 +5,15 @@ open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 
-[<Cmdlet(VerbsCommon.Set, "Relation", DefaultParameterSetName="ByPath")>]
+[<Cmdlet(VerbsCommon.Set, "Relation", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public SetRelationCommand () =
     inherit RepositoryCommandBase ()
 
-    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true)>]
-    member val Path = String.Empty with get, set
+    [<Parameter(Mandatory=true)>]
+    member val Target = String.Empty with get, set
 
-    [<Parameter(ParameterSetName="ByPath", Position=1, Mandatory=true)>]
-    member val TargetPath = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=1, Mandatory=true)>]
-    member val TargetId = String.Empty with get, set
-
-    [<Parameter(Position=2)>]
+    [<Parameter>]
     member val RelationType = RelationType.Related.ToString() with get, set
     
     override x.ProcessRecord () =
@@ -30,36 +21,37 @@ type public SetRelationCommand () =
 
         try
             let fromId =
-                if x.Id |> String.IsNullOrEmpty // check for default parameter set
-                then
-                    x.Path
-                    |> x.ToAbsolutePath
-                    |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                    |> Option.map Fingerprint.fingerprintAsString
-                else
-                    x.Id
-                    |> Some
-                |> x.Assert x.ActiveRepository.IsManagedId $"given origin id is unknown: {x.Id}"
+                x.TryDetermineItemId ()
+                |> x.AssertIsManagedItem "Set-Relation"
+                |> Option.get
 
             let toId =
-                if x.TargetId |> String.IsNullOrEmpty // check for default parameter set
+                if x.Target |> x.LooksLikeAnItemId
                 then
-                    x.TargetPath
-                    |> x.ToAbsolutePath
-                    |> x.TryFileExists $"given file does not exist or is not accessible: {x.TargetPath}"
-                    |> Option.map Fingerprint.fingerprintAsString
+                    x.Target
                 else
-                    x.TargetId
+                    x.Target
+                    |> x.ToAbsolutePath
+                    |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Target}"
+
+                    |> fun absolutePath ->
+                            absolutePath
+                            |> Fingerprint.getFingerprint 
+                            |> function
+                                | Derived fingerprint when x.ForceFullFingerprint.ToBool() = false -> fingerprint
+                                | Full fingerprint -> fingerprint
+                                | _ -> Fingerprint.fingerprintAsString absolutePath
+
                     |> Some
-                |> x.Assert x.ActiveRepository.IsManagedId $"given target id is unknown: {x.TargetId}"
+                    |> x.AssertIsManagedItem "Set-Relation"
+                    |> Option.get
 
             let relType =
                 x.RelationType
                 |> Utils.tryParseRelationType
-                |> x.WarningIfNone $"invalid relation type: {x.RelationType}"
+                |> Option.ifNone (fun _ -> failwith $"invalid relation type: {x.RelationType}")
+                |> Option.get
 
-            if fromId.IsSome && toId.IsSome && relType.IsSome
-            then
-                x.ActiveRepository.AddRelation fromId.Value { Target = toId.Value; IsA = relType.Value }
+            x.ActiveRepository.AddRelation fromId { Target = toId; IsA = relType }
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified

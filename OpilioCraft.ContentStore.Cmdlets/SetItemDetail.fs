@@ -6,7 +6,7 @@ open OpilioCraft.ContentStore.Core
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
-[<Cmdlet(VerbsCommon.Set, "ItemDetail", DefaultParameterSetName="ByPath")>]
+[<Cmdlet(VerbsCommon.Set, "ItemDetail", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public SetItemDetailCommand () =
     inherit RepositoryCommandBase ()
@@ -18,13 +18,6 @@ type public SetItemDetailCommand () =
         | _ -> true
 
     // cmdlet params
-    [<Parameter(ParameterSetName="ByPath", Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
-    [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = String.Empty with get, set
-
-    [<Parameter(ParameterSetName="ById", Position=0, Mandatory=true)>]
-    member val Id = String.Empty with get, set
-
     [<Parameter(Position=1, Mandatory=true)>]
     member val Name = String.Empty with get, set
 
@@ -46,17 +39,9 @@ type public SetItemDetailCommand () =
         base.ProcessRecord()
 
         try
-            if x.Id |> String.IsNullOrEmpty // parameterset ByPath?
-            then
-                x.Path
-                |> x.ToAbsolutePath
-                |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-                |> Option.map Fingerprint.fingerprintAsString
-            else
-                x.Id
-                |> Some
+            x.TryDetermineItemId ()
+            |> x.AssertIsManagedItem "Set-ItemDetail"
 
-            |> x.Assert x.ActiveRepository.IsManagedId $"given id is unknown: {x.Id}"
             |> Option.map x.ActiveRepository.GetItem
 
             // automatic type conversion

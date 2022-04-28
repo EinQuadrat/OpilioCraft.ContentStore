@@ -20,15 +20,13 @@ type public GetContentTypeCommand () =
         try
             x.Path
             |> x.ToAbsolutePath
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map
-                ( fun path -> 
-                    {
-                        Path = path
-                        ContentType = path |> System.IO.FileInfo |> OpilioCraft.ContentStore.Core.Utils.getContentType
-                    }
-                )
-            |> Option.iter x.WriteObject
+            |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
+            |> fun path -> 
+                {
+                    Path = path
+                    ContentType = path |> System.IO.FileInfo |> OpilioCraft.ContentStore.Core.Utils.getContentType
+                }
+            |> x.WriteObject
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 

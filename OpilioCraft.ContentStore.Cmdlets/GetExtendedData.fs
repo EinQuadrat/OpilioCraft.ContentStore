@@ -34,9 +34,11 @@ type public GetExtendedDataCommand () =
         try
             x.Path
             |> x.ToAbsolutePath
-            |> x.TryFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> Option.map (fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory)
-            |> Option.map ( fun (path, category) ->
+            |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
+
+            |> fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory
+
+            |> fun (path, category) ->
                 let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category x.ContentStoreManager.RulesProvider
 
                 if x.AsHashtable.IsPresent
@@ -47,8 +49,8 @@ type public GetExtendedDataCommand () =
                     :> obj
                 else
                     { Path = path; Details = extendedData } :> obj
-                )
-            |> Option.iter x.WriteObject
+
+            |> x.WriteObject
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
