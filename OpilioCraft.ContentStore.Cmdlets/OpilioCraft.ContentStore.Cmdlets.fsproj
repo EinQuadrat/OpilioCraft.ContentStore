@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Carsten Schäfer</Authors>
     <Copyright>Copyright (c) 2022 by Carsten Schäfer</Copyright>
-    <VersionPrefix>2.2.0</VersionPrefix>
+    <VersionPrefix>2.3.0</VersionPrefix>
     <PackageTags>OpilioCraft;PowerShell</PackageTags>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>

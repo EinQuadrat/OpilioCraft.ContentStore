@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Carsten Schäfer</Authors>
     <Copyright>Copyright (c) 2022 by Carsten Schäfer</Copyright>
-    <VersionPrefix>2.2.0</VersionPrefix>
+    <VersionPrefix>2.3.0</VersionPrefix>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
@@ -26,7 +26,7 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Data" Version="4.2.8" />
     <PackageReference Include="OpilioCraft.FSharp.Prelude" Version="1.8.0" />
-    <PackageReference Include="OpilioCraft.Lisp.Runtime" Version="0.6.0" />
+    <PackageReference Include="OpilioCraft.Lisp.Runtime" Version="2.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.3" />
   </ItemGroup>
 
