@@ -7,7 +7,7 @@ open OpilioCraft.FSharp.Prelude
 [<Cmdlet(VerbsLifecycle.Unregister, "Item", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public UnregisterItemCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet functionality
     override x.ProcessRecord () =

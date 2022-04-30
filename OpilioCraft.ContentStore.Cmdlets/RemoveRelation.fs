@@ -8,7 +8,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Remove, "Relation", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RemoveRelationCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     [<Parameter(Mandatory=true)>]
     member val Target = String.Empty with get, set

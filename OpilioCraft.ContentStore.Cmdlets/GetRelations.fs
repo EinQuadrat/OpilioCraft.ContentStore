@@ -7,7 +7,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Get, "Relations", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Relation list>)>]
 type public GetRelationsCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     override x.ProcessRecord () =
         base.ProcessRecord ()

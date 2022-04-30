@@ -4,23 +4,15 @@ open System
 open System.Management.Automation
 open System.Text.RegularExpressions
 
-open OpilioCraft.ContentStore.Core
 open OpilioCraft.FSharp.Prelude
 
 [<AbstractClass>]
-type public RepositoryCommandBase () as this =
-    inherit ContentStoreCommand ()
+type public RepositoryCommandExtended () =
+    inherit RepositoryCommandBase ()
 
     // used to identify a possible item id
     let itemIdRegex = Regex(@"^([0-9a-z]{64})$", RegexOptions.Compiled)
     let isValidItemId = itemIdRegex.IsMatch
-
-    // repository settings
-    [<DefaultValue>] val mutable private RepositoryInstance : Lazy<Repository>
-    member _.ActiveRepository = this.RepositoryInstance.Value
-
-    [<Parameter>]
-    member val Repository = String.Empty with get,set
 
     // item identification
     [<Parameter(ParameterSetName="ByIdentifier", Position=0, Mandatory=true, ValueFromPipeline=true)>]
@@ -80,19 +72,3 @@ type public RepositoryCommandBase () as this =
         |> Option.filterOrElseWith
             x.ActiveRepository.IsManagedId
             (fun itemId -> failwith $"provided item with id {itemId} is unknown to specified repository")
-
-    // functionality
-    override x.BeginProcessing () =
-        base.BeginProcessing ()
-
-        try
-            x.RepositoryInstance <- 
-                if String.IsNullOrEmpty(x.Repository)
-                then
-                    lazy ( x.ContentStoreManager.GetDefaultRepository() )
-                else
-                    lazy ( x.ContentStoreManager.GetRepository(x.Repository) )
-
-            x.RepositoryInstance.Force () |> ignore
-        with
-            | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable 

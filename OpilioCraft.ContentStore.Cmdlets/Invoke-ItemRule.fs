@@ -10,7 +10,7 @@ open OpilioCraft.Lisp
 [<Cmdlet(VerbsLifecycle.Invoke, "ItemRule", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<obj>)>]
 type public InvokeItemRuleCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet params
     [<Parameter>]

@@ -9,7 +9,7 @@ open OpilioCraft.FSharp.Prelude.ActivePatterns
 [<Cmdlet(VerbsCommon.Set, "ItemDetail", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public SetItemDetailCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // validator
     static let isWriteable = function

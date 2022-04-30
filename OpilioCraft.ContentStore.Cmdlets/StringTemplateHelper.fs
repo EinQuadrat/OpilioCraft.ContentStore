@@ -1,20 +1,35 @@
 ﻿module internal OpilioCraft.ContentStore.Cmdlets.StringTemplateHelper
 
+open System
+
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.ContentStore.Core
 open OpilioCraft.StringTemplate
+
+[<Literal>]
+let DefaultDateTimeFormat = "yyyyMMddTHHmmss"
 
 let tryGetDetail slot reposItem : ItemDetail option =
     reposItem.Details
     |> TryWrapper.tryGetValue slot
     
-let getDateTaken (reposItem : RepositoryItem) (args : string list) : string =
+let getDateTakenUTC (reposItem : RepositoryItem) (args : string list) : string =
     let format =
         match args with
         | format :: _ -> format
-        | _ -> "yyyyMMddThhmmss"
+        | _ -> DefaultDateTimeFormat
 
     reposItem.AsOf.ToString(format)
+
+let getDateTaken (reposItem : RepositoryItem) (args : string list) : string =
+    let (format, timezone) =
+        match args with
+        | [ format ; timezoneId ] -> format, TimeZoneInfo.FindSystemTimeZoneById(timezoneId)
+        | [ format ] -> format, TimeZoneInfo.Local
+        | [] -> DefaultDateTimeFormat, TimeZoneInfo.Local
+        | _ -> failwith "date expects zero, one or two arguments"
+
+    TimeZoneInfo.ConvertTimeFromUtc(reposItem.AsOf, timezone).ToString(format)
 
 let getOwner (reposItem : RepositoryItem) _ : string =
     reposItem
@@ -36,6 +51,7 @@ let genericPlaceholderMap : Map<string, RepositoryItem -> string list -> string>
         [
             "id", getId
             "date", getDateTaken
+            "date-utc", getDateTakenUTC
             "owner", getOwner
             "seqno", getSeqNo
         ]

@@ -7,7 +7,7 @@ open OpilioCraft.FSharp.Prelude
 [<Cmdlet(VerbsCommon.Get, "Owner", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<string>)>]
 type public GetOwnerCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet funtionality
     override x.ProcessRecord() =

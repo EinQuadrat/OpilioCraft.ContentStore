@@ -9,14 +9,14 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Rename, "ManagedFile", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RenameManagedFileCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // filename creator
     let mutable getFilename : RepositoryItem -> string = fun item -> item.Id + item.ContentType.FileExtension
 
     // cmdlet params
     [<Parameter>]
-    member val NamePattern = "{date|yyyyMMddThhmmmss}_{seqno}_{owner}#{id}" with get, set
+    member val NamePattern = "{date|yyyyMMddTHHmmmss}_{seqno}_{owner}#{id}" with get, set
 
     [<Parameter>]
     member val ResetFileDate = SwitchParameter(false) with get,set

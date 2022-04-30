@@ -8,7 +8,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Reset, "ItemDetails", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<ItemDetails>, typeof<Void>)>]
 type public ResetItemDetailsCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet params
     [<Parameter>]

@@ -7,7 +7,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Get, "ItemData", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<RepositoryItem>)>]
 type public GetItemDataCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet funtionality
     override x.ProcessRecord() =

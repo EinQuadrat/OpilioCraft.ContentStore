@@ -8,7 +8,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Remove, "ItemDetail", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public RemoveItemDetailCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // validator
     static let isWriteable = function

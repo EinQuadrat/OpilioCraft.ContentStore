@@ -9,7 +9,7 @@ open OpilioCraft.FSharp.Prelude.TryWrapper
 [<Cmdlet(VerbsCommon.Set, "DateTaken", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public SetDateTakenCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     let adjustDateTaken (itemDetails : ItemDetails) (offset : TimeSpan) =
         let tryGetValue = tryWrapper itemDetails.TryGetValue

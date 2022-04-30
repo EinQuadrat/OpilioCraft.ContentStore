@@ -7,7 +7,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Get, "ItemStatus", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<StatusByPath>, typeof<StatusById>)>]
 type public GetItemStatusCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // cmdlet funtionality
     override x.ProcessRecord() =

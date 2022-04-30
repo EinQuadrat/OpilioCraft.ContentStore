@@ -7,7 +7,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsLifecycle.Register, "Item", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<ItemId>)>]
 type public RegisterItemCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     [<Parameter>]
     member val ContentCategory = String.Empty with get, set

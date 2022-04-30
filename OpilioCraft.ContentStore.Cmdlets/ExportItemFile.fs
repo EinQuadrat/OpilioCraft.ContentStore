@@ -8,7 +8,7 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsData.Export, "ItemFile", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public ExportItemFileCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     // filename creator
     let mutable getFilename : RepositoryItem -> string = fun item -> item.Id + item.ContentType.FileExtension

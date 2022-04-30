@@ -7,7 +7,7 @@ open OpilioCraft.FSharp.Prelude
 [<Cmdlet(VerbsCommon.Clear, "Relations", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<Void>)>]
 type public ClearRelationsCommand () =
-    inherit RepositoryCommandBase ()
+    inherit RepositoryCommandExtended ()
 
     override x.ProcessRecord () =
         base.ProcessRecord ()
