@@ -1,19 +1,19 @@
 ﻿namespace OpilioCraft.ContentStore.Cmdlets
 
-open System.Management.Automation
+open System.Threading
 open OpilioCraft.ContentStore.Core
 
 [<AbstractClass>]
 type public ContentStoreCommand () =
     inherit CommandBase ()
 
-    [<Parameter>]
-    member val ReloadFramework = SwitchParameter(false) with get,set
-
-    // support framework reload to re-read configuration
-    member x.ContentStoreManager = ContentStoreManager.GetInstance(x.ReloadFramework.IsPresent)
+    // prevent redundant initialization
+    static let frameworkInitialized = ref 0
 
     // basic functionality provided for all content store framework commands
-    override x.EndProcessing () =
-        x.ContentStoreManager.Dispose()
-        base.EndProcessing ()
+    override _.BeginProcessing () =
+        base.BeginProcessing()
+
+        if Interlocked.CompareExchange(frameworkInitialized, 1, 0) = 0
+        then
+            ContentStoreManager.initialize ()

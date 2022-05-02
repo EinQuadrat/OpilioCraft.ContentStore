@@ -23,9 +23,9 @@ type public RepositoryCommandBase () as this =
             x.RepositoryInstance <- 
                 if String.IsNullOrEmpty(x.Repository)
                 then
-                    lazy ( x.ContentStoreManager.GetDefaultRepository() )
+                    lazy ( ContentStoreManager.getDefaultRepository () )
                 else
-                    lazy ( x.ContentStoreManager.GetRepository(x.Repository) )
+                    lazy ( ContentStoreManager.getRepository x.Repository )
 
             x.RepositoryInstance.Force () |> ignore
         with

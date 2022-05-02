@@ -34,7 +34,7 @@ type public InvokeItemRuleCommand () =
                 x.LispRuntime.TryParse x.Rule
                 |> Option.defaultWith (fun _ -> failwith "invalid rule")
             else
-                x.ContentStoreManager.RulesProvider.TryGetRule x.RuleName
+                ContentStoreManager.tryGetRule x.RuleName
                 |> Option.defaultWith (fun _ -> failwith "unknown rule")
 
             |> (fun expr -> x.CompiledRule <- expr)

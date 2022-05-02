@@ -2,7 +2,7 @@
 
 open System.Management.Automation
 open OpilioCraft.FSharp.Prelude
-
+open OpilioCraft.ContentStore.Core
 
 [<Cmdlet(VerbsCommon.Get, "Owner", DefaultParameterSetName="ByIdentifier")>]
 [<OutputType(typeof<string>)>]
@@ -18,7 +18,7 @@ type public GetOwnerCommand () =
             |> x.AssertIsManagedItem
 
             |> Option.map x.ActiveRepository.GetItem
-            |> Option.bind (x.ContentStoreManager.RulesProvider.TryApplyRule "GuessOwner")
+            |> Option.bind (ContentStoreManager.tryApplyRule "GuessOwner")
             |> Option.defaultValue "#UNKNOWN"
 
             |> x.WriteObject

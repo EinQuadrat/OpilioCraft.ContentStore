@@ -16,7 +16,7 @@ type public RegisterItemCommand () =
         base.BeginProcessing () // initialize MMToolkit
 
         try
-            x.ContentStoreManager.UseExifTool()
+            ContentStoreManager.preloadExifTool()
         with
             | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.NotSpecified
 

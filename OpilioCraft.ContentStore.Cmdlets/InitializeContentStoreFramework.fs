@@ -4,18 +4,37 @@ open System.Management.Automation
 open OpilioCraft.ContentStore.Core
 
 [<Cmdlet(VerbsData.Initialize, "ContentStoreFramework")>]
-[<OutputType(typeof<ContentStoreManager>)>]
+[<OutputType(typeof<unit>)>]
 type public InitializeMMToolkitCommand () =
     inherit ContentStoreCommand ()
 
     [<Parameter>]
-    member val WithExifTool = SwitchParameter(false) with get, set
+    member val PreloadExifTool = SwitchParameter(false) with get, set
+
+    [<Parameter>]
+    member val ResetFramework = SwitchParameter(false) with get,set
+
+    [<Parameter>]
+    member val ReloadRules = SwitchParameter(false) with get,set
+
+    [<Parameter>]
+    member val Cleanup = SwitchParameter(false) with get,set
 
     // cmdlet funtionality
     override x.EndProcessing() =
-        if x.WithExifTool.IsPresent
+        if x.ResetFramework.IsPresent
         then
-            x.ContentStoreManager.UseExifTool() // MMToolkit is initialized by base class already
+            ContentStoreManager.initialize()
         
-        x.ContentStoreManager |> x.WriteObject
-        // do not call base.EndProcessing() to avoid immediate disposal
+        else if x.Cleanup.IsPresent
+        then
+            ContentStoreManager.freeResources()
+        
+        else
+            if x.ReloadRules.IsPresent
+            then
+                ContentStoreManager.updateRules()
+
+            if x.PreloadExifTool.IsPresent
+            then
+                ContentStoreManager.preloadExifTool() // multiple calls are harmless

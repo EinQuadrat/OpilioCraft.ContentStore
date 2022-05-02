@@ -24,7 +24,7 @@ type public GetExtendedDataCommand () =
         base.BeginProcessing () // initialize MMToolkit
 
         try
-            x.ContentStoreManager.UseExifTool()
+            ContentStoreManager.preloadExifTool()
         with
             | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
 
@@ -39,7 +39,7 @@ type public GetExtendedDataCommand () =
             |> fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory
 
             |> fun (path, category) ->
-                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category x.ContentStoreManager.RulesProvider
+                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category (ContentStoreManager.getRulesProvider())
 
                 if x.AsHashtable.IsPresent
                 then

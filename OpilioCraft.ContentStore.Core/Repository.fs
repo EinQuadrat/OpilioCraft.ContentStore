@@ -69,7 +69,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
 
     // ------------------------------------------------------------------------
 
-    member x.InjectRules (provider : RulesProvider) = rulesProvider <- provider
+    member x.InjectRules (provider : RulesProvider) = rulesProvider <- provider ; x
 
     // ------------------------------------------------------------------------
 
