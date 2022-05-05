@@ -59,7 +59,7 @@ module ContentStoreManager =
 
     // rules management
     let updateRules () =
-        rulesProvider <- RulesProvider (UserSettings.frameworkConfig())
+        rulesProvider <- RulesProvider ( Settings.RulesLocation )
         repositoryCache |> Map.iter (fun _ repo -> repo.InjectRules rulesProvider |> ignore)
 
     let tryGetRule = rulesProvider.TryGetRule

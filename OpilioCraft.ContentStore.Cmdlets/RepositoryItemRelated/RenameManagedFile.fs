@@ -12,7 +12,7 @@ type public RenameManagedFileCommand () =
     inherit RepositoryCommandExtended ()
 
     // filename creator
-    let mutable getFilename : RepositoryItem -> string = fun item -> item.Id + item.ContentType.FileExtension
+    let mutable applyPattern : RepositoryItem -> string = fun item -> item.Id
 
     // cmdlet params
     [<Parameter>]
@@ -29,7 +29,7 @@ type public RenameManagedFileCommand () =
         base.BeginProcessing()
 
         try
-            getFilename <- StringTemplateHelper.FilenameCreator.Initialize(x.NamePattern).Apply
+            applyPattern <- StringTemplateHelper.FilenameCreator.Initialize(x.NamePattern).Apply
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 
@@ -50,7 +50,7 @@ type public RenameManagedFileCommand () =
 
             |> fun id ->
                 let item = x.ActiveRepository.GetItem id
-                let filename = getFilename item
+                let filename = (applyPattern item) + item.ContentType.FileExtension
                 let targetPath = IO.Path.Combine(Path.GetDirectoryName(x.Path), filename)
 
                 if not <| x.Path.Equals(targetPath) // skip unchanged names

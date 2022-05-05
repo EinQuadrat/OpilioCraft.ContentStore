@@ -4,7 +4,7 @@ open System
 type Path = IO.Path
 
 [<RequireQualifiedAccess>]
-module internal Settings =
+module Settings =
     let FrameworkVersion = Version(2, 1)
 
     // location of runtime; e.g. for side-by-side apps

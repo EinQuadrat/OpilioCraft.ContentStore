@@ -41,7 +41,7 @@ type ExifToolCommand =
     | RequestMetadata of Filename:string * AsyncReplyChannel<ExifToolResult>
     | Quit
 
-module ExifTool =
+module internal ExifTool =
     let exifExecutable = Path.Combine(Settings.RuntimeBase, "exiftool.exe")
     let exifArgsFile = Path.Combine(Settings.AppDataLocation, "exiftool_args.txt")
 

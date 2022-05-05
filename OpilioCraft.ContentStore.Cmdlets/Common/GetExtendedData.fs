@@ -9,7 +9,10 @@ open OpilioCraft.ContentStore.Core
 [<Cmdlet(VerbsCommon.Get, "ExtendedData")>]
 [<OutputType(typeof<ExtendedData>, typeof<Hashtable>)>]
 type public GetExtendedDataCommand () =
-    inherit ContentStoreCommand ()
+    inherit CommandBase ()
+
+    // rules provider
+    let mutable rulesProvider : RulesProvider option = None
 
     // cmdlet params
     [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
@@ -19,12 +22,16 @@ type public GetExtendedDataCommand () =
     [<Parameter>]
     member val AsHashtable = SwitchParameter(false) with get, set
 
+    [<Parameter>]
+    member val RulesLocation = Settings.RulesLocation with get,set
+
     // cmdlet funtionality
     override x.BeginProcessing () =
         base.BeginProcessing () // initialize MMToolkit
 
         try
-            ContentStoreManager.preloadExifTool()
+            rulesProvider <- RulesProvider (x.RulesLocation) |> Some // load rules
+            ContentStoreManager.preloadExifTool() // speedup processing
         with
             | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable
 
@@ -36,10 +43,10 @@ type public GetExtendedDataCommand () =
             |> x.ToAbsolutePath
             |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
 
-            |> fun path -> path, path |> System.IO.FileInfo |> Utils.getContentCategory
+            |> fun path -> path, path |> IO.FileInfo |> Utils.getContentCategory
 
             |> fun (path, category) ->
-                let extendedData = Utils.getCategorySpecificDetails (System.IO.FileInfo path) category (ContentStoreManager.getRulesProvider())
+                let extendedData = Utils.getCategorySpecificDetails (IO.FileInfo path) category rulesProvider.Value
 
                 if x.AsHashtable.IsPresent
                 then

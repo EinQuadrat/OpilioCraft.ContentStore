@@ -14,7 +14,7 @@ type public GetItemDetailCommand () =
     [<Parameter(Position=1, Mandatory=true)>]
     member val Name = String.Empty with get, set
 
-    [<Parameter(Position=2)>]
+    [<Parameter>]
     member val DefaultValue = String.Empty with get, set
 
     // cmdlet funtionality

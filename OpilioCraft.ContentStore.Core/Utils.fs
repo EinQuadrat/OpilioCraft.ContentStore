@@ -3,8 +3,6 @@
 open System.IO
 open FSharp.Data
 
-open FParsec
-
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
@@ -68,8 +66,8 @@ let private transformExifToItemDetails (exif : ExifToolResult) =
     exif.ParsedJson.Properties()
     |> Array.fold ( fun map (name, value) -> (transformJsonValue name value, map) ||> Map.add name ) Map.empty
 
-let tryGetValue key (itemDetails : ItemDetails) =
-    itemDetails.TryGetValue(key)
+let tryGetDetail key (item : RepositoryItem) =
+    item.Details.TryGetValue(key)
     |> function
         | true, v    -> Some v
         | false, _   -> None
@@ -98,7 +96,7 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
             result
             |> rulesProvider.TryApplyRule "GuessOwner"
             |> Option.map ItemDetail.String
-            |> Option.iter ( fun owner -> result.Add(Slot.Owner, owner))
+            |> Option.iter ( fun owner -> result.Add(Slot.Owner, owner) )
 
         | _ -> ignore ()
 
@@ -131,6 +129,3 @@ let getCategorySpecificDetails (fi : FileInfo) (contentCategory : ContentCategor
     | _ -> ignore ()
 
     result
-
-// ------------------------------------------------------------------------------------------------
-

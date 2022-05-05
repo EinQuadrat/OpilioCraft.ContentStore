@@ -11,34 +11,32 @@ exception InvalidRuleDefinitionException of Path:string
 exception UnexpectedRuleResultException of Name:string * Result:obj
     with override x.ToString () = $"rule {x.Name} returned an unexpected result type: {x.Result.GetType().FullName}"
 
-type RulesProvider ( frameworkConfig : FrameworkConfig ) =
+type RulesProvider ( rulesLocation ) =
     let lispRuntime = LispRuntime.Initialize().InjectResultHook(ItemDetailHelper.unwrapItemDetail)
 
-    let loadRuleDefinition (ruleName : string) (pathToRuleDefinition : string) : Expression =
-        let path = if Path.IsPathRooted(pathToRuleDefinition) then pathToRuleDefinition else Path.Combine(Settings.AppDataLocation, pathToRuleDefinition)
-
-        if not <| File.Exists path
+    let loadRule (ruleName : string) (pathToRuleDefinition : string) : Expression =
+        if not <| File.Exists pathToRuleDefinition
         then
-            raise <| new FileNotFoundException($"could not find rule definition file for rule {ruleName}", path)
+            raise <| new FileNotFoundException($"could not find definition file for rule {ruleName}", pathToRuleDefinition)
 
-        lispRuntime.LoadFile path
+        lispRuntime.LoadFile pathToRuleDefinition
         |> lispRuntime.ParseWithResult
-        |> function | Ok compiledRule -> compiledRule | _ -> raise <| InvalidRuleDefinitionException path
+        |> function | Ok compiledRule -> compiledRule | _ -> raise <| InvalidRuleDefinitionException pathToRuleDefinition
 
     let rules : Map<string, Expression> =
-        if Directory.Exists(Settings.RulesLocation)
+        if Directory.Exists rulesLocation
         then
-            Directory.EnumerateFiles(Settings.RulesLocation, "*.lisp")
+            Directory.EnumerateFiles(rulesLocation, "*.lisp")
             |> Seq.map (fun file -> Path.GetFileNameWithoutExtension(file), file)
-            |> Seq.map (fun (name, path) -> name, loadRuleDefinition name path)
+            |> Seq.map (fun (name, path) -> name, loadRule name path)
             |> Map.ofSeq
         else
             Map.empty
 
     // constructors
     new () =
-        // initialize with empty rules table
-        RulesProvider { Version = Settings.FrameworkVersion; Repositories = Map.empty; Rules = Map.empty }
+        // initialize from default rules location
+        RulesProvider ( Settings.RulesLocation )
 
     // rule access
     member _.TryGetRule name =

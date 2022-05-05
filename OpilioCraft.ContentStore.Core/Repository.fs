@@ -227,7 +227,7 @@ type Repository internal (root : string, config : RepositoryConfig, forcePrefetc
                 }
 
             // if present prefer DateTaken over AsOf
-            tryGetValue Slot.DateTaken item.Details
+            tryGetDetail Slot.DateTaken item
             |> Option.map (fun dateDetail -> dateDetail.AsDateTime.ToUniversalTime())
             |> Option.iter (fun dateTaken -> item <- { item with AsOf = dateTaken })
 
