@@ -9,10 +9,6 @@ open OpilioCraft.StringTemplate
 [<Literal>]
 let DefaultDateTimeFormat = "yyyyMMddTHHmmss"
 
-//let tryGetDetail slot reposItem : ItemDetail option =
-//    reposItem.Details
-//    |> TryWrapper.tryGetValue slot
-
 let getId (reposItem : RepositoryItem) _ : string =
     reposItem.Id
     
