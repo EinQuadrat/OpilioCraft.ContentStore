@@ -16,7 +16,7 @@ type public AddFingerprintCommand () =
     member val Path = System.String.Empty with get, set
 
     [<Parameter>]
-    member val Force = SwitchParameter(false) with get, set
+    member val ForceFullFingerprint = SwitchParameter(false) with get, set
 
     [<Parameter>]
     member val PassThru = SwitchParameter(false) with get, set
@@ -28,7 +28,7 @@ type public AddFingerprintCommand () =
             x.Path
             |> x.ToAbsolutePath
             |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
-            |> fun path -> path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
+            |> fun path -> path |> if x.ForceFullFingerprint.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
             |> fun fp -> x.InputObject.Members.Add(PSNoteProperty("Fingerprint", fp.Value))
             
             if x.PassThru.IsPresent
