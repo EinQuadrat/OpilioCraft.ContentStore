@@ -6,19 +6,7 @@ open FSharp.Data
 open OpilioCraft.FSharp.Prelude
 open OpilioCraft.FSharp.Prelude.ActivePatterns
 
-// public api
-let getContentCategory (fi : FileInfo) : ContentCategory =
-    match fi.Extension.ToLower() with
-    | Match("^(\.(arw|jpe?g|tiff?|gif))$") _ -> ContentCategory.Image
-    | Match("^(\.(mov|mp4|mts))$") _ -> ContentCategory.Movie
-    | _ -> ContentCategory.Unknown
-
-let getContentType (fi : FileInfo) : ContentType =
-    {
-        Category = fi |> getContentCategory
-        FileExtension = fi.Extension.ToLower()
-    }
-
+// file metadata
 let identifyFile (fi : FileInfo) =
     {
         FileInfo = fi
@@ -26,6 +14,23 @@ let identifyFile (fi : FileInfo) =
         Fingerprint = fi.FullName |> Fingerprint.fingerprintAsString
     }
 
+let getContentType (fi : FileInfo) : ContentType =
+    let fileExt = fi.Extension.ToLower()
+
+    let category =        
+        match fileExt with
+        | Match("^(\.(arw|jpe?g|tiff?|gif))$") _ -> ContentCategory.Image
+        | Match("^(\.(mov|mp4|mts))$") _ -> ContentCategory.Movie
+        | _ -> ContentCategory.Unknown
+    
+    {
+        Category = category
+        FileExtension = fileExt
+    }
+
+let getContentCategory (fi : FileInfo) = (getContentType fi).Category
+
+// input validation
 let tryParseContentCategory (input : string) : ContentCategory option =
     match System.Enum.TryParse<ContentCategory>(input, true) with
     | true, value -> Some value
@@ -36,7 +41,7 @@ let tryParseRelationType (input : string) : RelationType option =
     | true, value -> Some value
     | _ -> None
 
-// exif related functions
+// exif related
 let private transformExifToItemDetails (exif : ExifToolResult) =
     let transformJsonValue (nameAsHint : string) jsonValue : ItemDetail =
         match jsonValue with

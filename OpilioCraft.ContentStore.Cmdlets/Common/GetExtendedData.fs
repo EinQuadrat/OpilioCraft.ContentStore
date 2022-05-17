@@ -43,7 +43,7 @@ type public GetExtendedDataCommand () =
             |> x.ToAbsolutePath
             |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
 
-            |> fun path -> path, path |> IO.FileInfo |> Utils.getContentCategory
+            |> fun path -> path, ( path |> IO.FileInfo |> Utils.getContentCategory )
 
             |> fun (path, category) ->
                 let extendedData = Utils.getCategorySpecificDetails (IO.FileInfo path) category rulesProvider.Value

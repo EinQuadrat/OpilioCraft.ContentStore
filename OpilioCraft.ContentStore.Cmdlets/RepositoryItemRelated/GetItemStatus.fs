@@ -14,7 +14,7 @@ type public GetItemStatusCommand () =
         base.ProcessRecord()
 
         try
-            x.TryInputAsId()
+            x.TryInputAsItemId()
             |> Option.map (
                 fun itemId ->
                     {

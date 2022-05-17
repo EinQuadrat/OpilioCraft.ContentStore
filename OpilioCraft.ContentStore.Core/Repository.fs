@@ -292,6 +292,7 @@ and DetailsConverter() =
         | Boolean x -> writer.WriteBooleanValue x
         | Number x -> writer.WriteNumberValue x
         | String x -> writer.WriteStringValue x
+
         // not natively supported value types
         | DateTime x -> writer.WriteStringValue $"{DateTimePrefix} {x.ToString(dateTimeFormat)}"
         | Float x -> writer.WriteStringValue $"{FloatPrefix} {x.ToString()}" // preserve precision of number value by string wrapper

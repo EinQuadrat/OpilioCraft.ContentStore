@@ -43,6 +43,7 @@
     <Compile Include="RepositoryItemRelated\GetOwner.fs" />
     <Compile Include="RepositoryItemRelated\SetDateTaken.fs" />
     <Compile Include="RepositoryItemRelated\RenameManagedFile.fs" />
+    <None Include="Common\RenameItemUsingMetadata.fs" />
   </ItemGroup>
 
   <ItemGroup>

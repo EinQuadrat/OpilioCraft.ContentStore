@@ -31,13 +31,13 @@ type public RepositoryCommandExtended () =
     // check given input
     member _.IsValidItemId = isValidItemId
 
-    member x.TryInputAsId () =
+    member x.TryInputAsItemId () =
         match x.ParameterSetName with
         | "ByItemId" -> Some x.Id
         | "ByIdentifier" -> Some x.Identifier |> Option.filter isValidItemId
         | _ -> None
 
-    member x.GotId = x.TryInputAsId >> Option.isSome
+    member x.GotId = x.TryInputAsItemId >> Option.isSome
 
     member x.TryInputAsPath () =
         match x.ParameterSetName with
@@ -49,7 +49,7 @@ type public RepositoryCommandExtended () =
     member x.GotPath = x.TryInputAsPath >> Option.isSome
 
     // map input to item id
-    member x.IdFromPath absolutePath =
+    member x.ItemIdFromPath absolutePath =
         absolutePath
         |> Fingerprint.getFingerprint 
         |> function
@@ -58,10 +58,10 @@ type public RepositoryCommandExtended () =
             | _ -> Fingerprint.fingerprintAsString absolutePath
         
     member x.RetrieveItemId () =
-        x.TryInputAsId() |> Option.orElse ( x.TryInputAsPath () |> Option.map x.IdFromPath )
+        x.TryInputAsItemId() |> Option.orElse ( x.TryInputAsPath () |> Option.map x.ItemIdFromPath )
 
-    member x.AssertIdProvided () =
-        x.TryInputAsId() |> Option.orElseWith (fun _ -> failwith $"expected an id as first parameter") |> ignore
+    member x.AssertItemIdProvided () =
+        x.TryInputAsItemId() |> Option.orElseWith (fun _ -> failwith $"expected an id as first parameter") |> ignore
         
     member x.AssertPathProvided () =
         x.TryInputAsPath() |> Option.orElseWith (fun _ -> failwith $"expected a path as first parameter") |> ignore

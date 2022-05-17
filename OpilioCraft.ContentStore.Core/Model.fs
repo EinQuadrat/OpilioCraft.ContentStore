@@ -1,5 +1,6 @@
 ﻿namespace OpilioCraft.ContentStore.Core
 
+open System
 open System.Text.Json.Serialization
 open OpilioCraft.FSharp.Prelude
 
@@ -7,27 +8,26 @@ open OpilioCraft.FSharp.Prelude
 exception UnknownRepositoryException of Name : string
     with override x.Message = $"[ContentStore] no repository with name \"{x.Name}\" found; please check framework configuration"
 
-
 // framework config
 type FrameworkConfig =
     {
-        Version : System.Version
+        Version      : Version
         Repositories : Map<string,string>
-        Rules : Map<string,string>
+        Rules        : Map<string,string>
     }
 
 // repository config
 type RepositoryConfig =
     {
-        Version : System.Version
-        Layout : RepositoryLayout
-        Prefetch : bool
+        Version     : Version
+        Layout      : RepositoryLayout
+        Prefetch    : bool
     }
 
 and RepositoryLayout =
     {
-        Items : string
-        Storage : string
+        Items       : string
+        Storage     : string
     }
 
 // ----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ type ContentCategory =
 
 type ContentType =
     {
-        Category : ContentCategory
+        Category      : ContentCategory
         FileExtension : string
     }
 
@@ -48,8 +48,8 @@ type ContentType =
 
 type FileIdentificator =
     {
-        FileInfo : System.IO.FileInfo
-        AsOf : System.DateTime
+        FileInfo    : IO.FileInfo
+        AsOf        : DateTime
         Fingerprint : Fingerprint
     }
 
@@ -62,7 +62,7 @@ type RelationType =
 
 type Relation = {
     Target : Fingerprint
-    IsA : RelationType
+    IsA    : RelationType
 }
 
 // ----------------------------------------------------------------------------
@@ -71,18 +71,18 @@ type ItemDetail =
     | Boolean of bool
     | Float of float
     | Number of decimal
-    | DateTime of System.DateTime
-    | TimeSpan of System.TimeSpan
+    | DateTime of DateTime
+    | TimeSpan of TimeSpan
     | String of string
 
     member x.Unwrap : obj =
         match x with
-        | Boolean plainValue -> plainValue :> obj
-        | Float plainValue -> plainValue :> obj
-        | Number plainValue -> plainValue :> obj
+        | Boolean plainValue  -> plainValue :> obj
+        | Float plainValue    -> plainValue :> obj
+        | Number plainValue   -> plainValue :> obj
         | DateTime plainValue -> plainValue :> obj
         | TimeSpan plainValue -> plainValue :> obj
-        | String plainValue -> plainValue :> obj
+        | String plainValue   -> plainValue :> obj
 
     member x.AsBoolean : bool =
         match x with
@@ -121,11 +121,11 @@ type ItemId = Fingerprint
 
 type RepositoryItem = // data structure used by Repository
     {
-        Id : ItemId // use fingerprint (SHA256) as id
-        AsOf : System.DateTime // as UTC timestamp
+        Id          : ItemId // use fingerprint (SHA256) as id
+        AsOf        : System.DateTime // as UTC timestamp
         ContentType : ContentType
-        Relations : Relation list
-        Details : ItemDetails
+        Relations   : Relation list
+        Details     : ItemDetails
     }
 
     [<JsonIgnore>]

@@ -24,16 +24,15 @@ type public CommandBase () =
         else
             Path.Combine(x.SessionState.Path.CurrentFileSystemLocation.ToString(), path)
 
-    member inline x.WarnIfNone warning maybe =
-        maybe |> Option.ifNone ( fun _ -> x.WriteWarning warning )
+    member x.WarnIfNone warning =
+        Option.ifNone ( fun _ -> x.WriteWarning warning )
 
-    member inline x.WarnIfFalse warning input =
+    member x.WarnIfFalse warning input =
         if not input then x.WriteWarning warning
         input
 
     member _.AssertFileExists errorMessage path =
-        let testResult = path |> File.Exists in
-        if not testResult then failwith $"{errorMessage}: {path}"
+        if not <| File.Exists path then failwith $"{errorMessage}: {path}"
         path
 
     // simplify error handling

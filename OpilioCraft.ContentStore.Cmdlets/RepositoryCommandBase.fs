@@ -4,29 +4,36 @@ open System
 open System.Management.Automation
 open OpilioCraft.ContentStore.Core
 
+type private RepositoryConnection =
+    | NotInitialized
+    | Active of Repository
+
 [<AbstractClass>]
-type public RepositoryCommandBase () as this =
+type public RepositoryCommandBase () =
     inherit ContentStoreCommand ()
 
-    // repository settings
-    [<DefaultValue>] val mutable private RepositoryInstance : Lazy<Repository>
-    member _.ActiveRepository = this.RepositoryInstance.Value
+    // repository status
+    let mutable repositoryConnection = NotInitialized
 
+    member _.ActiveRepository =
+        match repositoryConnection with
+        | NotInitialized -> failwith "[FATAL] connection to repository is not initialized yet"
+        | Active repos -> repos
+
+    // params
     [<Parameter>]
-    member val Repository = String.Empty with get,set
+    member val SelectRepository = String.Empty with get,set
 
     // functionality
     override x.BeginProcessing () =
         base.BeginProcessing ()
 
         try
-            x.RepositoryInstance <- 
-                if String.IsNullOrEmpty(x.Repository)
+            repositoryConnection <- 
+                if String.IsNullOrEmpty x.SelectRepository
                 then
-                    lazy ( ContentStoreManager.getDefaultRepository () )
+                    Active <| ContentStoreManager.getDefaultRepository ()
                 else
-                    lazy ( ContentStoreManager.getRepository x.Repository )
-
-            x.RepositoryInstance.Force () |> ignore
+                    Active <| ContentStoreManager.getRepository x.SelectRepository
         with
             | exn -> exn |> x.ThrowAsTerminatingError ErrorCategory.ResourceUnavailable 

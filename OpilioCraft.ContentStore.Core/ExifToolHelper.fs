@@ -25,11 +25,7 @@ type ExifToolResult(jsonString : string) =
         // IMPORTANT: be sure to keep Exif.EmptyInstance in sync with exiftool.exe result structure
             
     member x.Item
-        with get (name : string) =
-#if DEBUG
-            System.Console.Out.WriteLine $"[DEBUG] ExifToolResult: requested item: {name}"
-#endif
-            x.ParsedJson.TryGetProperty name
+        with get (name : string) = x.ParsedJson.TryGetProperty name
 
     static member val EmptyInstance = ExifToolResult @"[{}]"
         // minimal value compatible with exiftool.exe result
@@ -56,7 +52,6 @@ module internal ExifTool =
             // create start info
             let psi = ProcessStartInfo(exifExecutable)
             psi.Arguments <- $"-stay_open true -@ \"{exifArgsFile}\" -common_args -json -G0 --composite:all --directory --filename --creatortool -d \"%%Y-%%m-%%dT%%H:%%M:%%S%%z\" -charset FileName=UTF8"
-            // psi.Arguments <- $"-stay_open true -@ \"{exifArgsFile}\" -common_args -json -d \"%%Y-%%m-%%dT%%H:%%M:%%S\" --creatortool -charset FileName=UTF8"
             psi.RedirectStandardOutput <- true
             psi.RedirectStandardError <- true
             psi.UseShellExecute <- false

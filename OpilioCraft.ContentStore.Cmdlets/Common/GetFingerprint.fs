@@ -13,7 +13,7 @@ type public GetFingerprintCommand () =
     member val Path = System.String.Empty with get, set
 
     [<Parameter>]
-    member val Force : SwitchParameter = SwitchParameter(false) with get, set
+    member val ForceFullFingerprint : SwitchParameter = SwitchParameter(false) with get, set
 
     [<Parameter>]
     member val Plain : SwitchParameter = SwitchParameter(false) with get, set
@@ -26,15 +26,22 @@ type public GetFingerprintCommand () =
             |> x.ToAbsolutePath
             |> x.AssertFileExists $"given file does not exist or is not accessible: {x.Path}"
 
-            |> fun path -> 
-                path, path |> if x.Force.IsPresent then Fingerprint.getFullFingerprint else Fingerprint.getFingerprint
+            |> fun path ->
+                let fpStrategy =
+                    if x.ForceFullFingerprint.IsPresent
+                    then
+                        Fingerprint.getFullFingerprint
+                    else
+                        Fingerprint.getFingerprint
+
+                path, ( fpStrategy path )
             
             |> fun (path, qfp) ->
                 if x.Plain.IsPresent
                 then
-                    { Path = path; PlainFingerprint.Fingerprint = qfp.Value } |> x.WriteObject
+                     x.WriteObject <| { Path = path; PlainFingerprint.Fingerprint = qfp.Value }
                 else
-                    { Path = path; TypedFingerprint.Fingerprint = qfp } |> x.WriteObject
+                     x.WriteObject <| { Path = path; TypedFingerprint.Fingerprint = qfp }
         with
             | exn -> exn |> x.WriteAsError ErrorCategory.NotSpecified
 

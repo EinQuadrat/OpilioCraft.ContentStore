@@ -10,19 +10,14 @@ exception RepositoryNotFoundException of Root : string
 [<RequireQualifiedAccess>]
 module ContentStoreManager =
     // defaults
-    [<Literal>]
     let RepositoryConfigFilename = "repository.json"
-    
-    [<Literal>]
     let NameOfDefaultRepository  = "DEFAULT"
-
-    [<Literal>]
-    let ResourceExifTool         = "ExifTool"
+    let private ResourceExifTool = "ExifTool"
 
     // managed resources
     let mutable private repositoryCache : Map<string, Repository> = Map.empty
-    let mutable private rulesProvider : RulesProvider = RulesProvider()
-    let mutable private usedResources : Map<string, IDisposable> = Map.empty
+    let mutable private rulesProvider   : RulesProvider = RulesProvider()
+    let mutable private usedResources   : Map<string, IDisposable> = Map.empty
 
     // repository access
     let private loadRepository name =
@@ -51,16 +46,18 @@ module ContentStoreManager =
 
         repositoryCache.[name]
 
+    let getDefaultRepository () = getRepository NameOfDefaultRepository
+
     let reloadRepository name =
         repositoryCache <- repositoryCache |> Map.remove name // remove from cache to force reload
         getRepository name
 
-    let getDefaultRepository () = getRepository NameOfDefaultRepository
-
     // rules management
-    let updateRules () =
+    let loadRules () =
         rulesProvider <- RulesProvider ( Settings.RulesLocation )
         repositoryCache |> Map.iter (fun _ repo -> repo.InjectRules rulesProvider |> ignore)
+
+    let reloadRules = loadRules
 
     let tryGetRule = rulesProvider.TryGetRule
     let tryApplyRule = rulesProvider.TryApplyRule
@@ -85,7 +82,7 @@ module ContentStoreManager =
             // will throw InvalidUserSettingsException if config file is of wrong format
             // will throw IncompatibleVersionException if version in config file is not framework version
 
-        // reset caches
+        // reset resources
         freeResources()
         repositoryCache <- Map.empty
-        updateRules()
+        loadRules()

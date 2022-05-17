@@ -1,5 +1,6 @@
 ﻿namespace OpilioCraft.ContentStore.Cmdlets
 
+open System
 open System.Management.Automation
 
 [<Cmdlet(VerbsCommon.Get, "ContentType")>]
@@ -9,7 +10,7 @@ type public GetContentTypeCommand () =
 
     [<Parameter(Position=0, Mandatory=true, ValueFromPipeline=true, ValueFromPipelineByPropertyName=true)>]
     [<Alias("FullName")>] // to be compatible with Get-Item result
-    member val Path = System.String.Empty with get, set
+    member val Path = String.Empty with get, set
 
     override _.BeginProcessing () =
         base.BeginProcessing () // initialize MMToolkit
@@ -24,7 +25,7 @@ type public GetContentTypeCommand () =
             |> fun path -> 
                 {
                     Path = path
-                    ContentType = path |> System.IO.FileInfo |> OpilioCraft.ContentStore.Core.Utils.getContentType
+                    ContentType = path |> IO.FileInfo |> OpilioCraft.ContentStore.Core.Utils.getContentType
                 }
             |> x.WriteObject
         with

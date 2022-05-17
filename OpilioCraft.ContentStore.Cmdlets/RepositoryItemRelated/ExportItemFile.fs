@@ -39,7 +39,7 @@ type public ExportItemFileCommand () =
         base.ProcessRecord()
 
         try
-            x.AssertIdProvided()
+            x.AssertItemIdProvided()
 
             x.RetrieveItemId()
             |> x.AssertIsManagedItem
